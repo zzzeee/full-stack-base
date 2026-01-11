@@ -1,0 +1,12 @@
+{"timestamp":"2026-01-11T06:44:22.323Z","level":"INFO","message":"<--","context":{"method":"GET","path":"/health","ip":"127.0.0.1","userAgent":"Deno/2.6.4","timestamp":"2026-01-11T06:44:22.323Z"}}
+{"timestamp":"2026-01-11T06:44:22.374Z","level":"INFO","message":"-->","context":{"method":"GET","path":"/health","ip":"127.0.0.1","status":200,"duration":"52ms","timestamp":"2026-01-11T06:44:22.374Z"}}
+{"timestamp":"2026-01-11T06:44:22.378Z","level":"INFO","message":"<--","context":{"method":"POST","path":"/api/auth/captcha","ip":"127.0.0.1","userAgent":"Deno/2.6.4","timestamp":"2026-01-11T06:44:22.378Z"}}
+{"timestamp":"2026-01-11T06:44:22.380Z","level":"INFO","message":"-->","context":{"method":"POST","path":"/api/auth/captcha","ip":"127.0.0.1","status":200,"duration":"2ms","timestamp":"2026-01-11T06:44:22.380Z"}}
+{"timestamp":"2026-01-11T06:44:22.388Z","level":"INFO","message":"<--","context":{"method":"POST","path":"/api/auth/login","ip":"127.0.0.1","userAgent":"Deno/2.6.4","timestamp":"2026-01-11T06:44:22.388Z"}}
+{"timestamp":"2026-01-11T06:44:22.388Z","level":"INFO","message":"-->","context":{"method":"POST","path":"/api/auth/login","ip":"127.0.0.1","status":404,"duration":"1ms","timestamp":"2026-01-11T06:44:22.388Z"}}
+{"timestamp":"2026-01-11T06:46:50.881Z","level":"INFO","message":"<--","context":{"method":"GET","path":"/health","ip":"127.0.0.1","userAgent":"Deno/2.6.4","timestamp":1768114010881}}
+{"timestamp":"2026-01-11T06:46:50.914Z","level":"INFO","message":"-->","context":{"status":200,"duration":"33ms","timestamp":1768114010914}}
+{"timestamp":"2026-01-11T06:46:50.918Z","level":"INFO","message":"<--","context":{"method":"POST","path":"/api/auth/captcha","ip":"127.0.0.1","userAgent":"Deno/2.6.4","timestamp":1768114010918}}
+{"timestamp":"2026-01-11T06:46:50.921Z","level":"INFO","message":"-->","context":{"status":200,"duration":"3ms","timestamp":1768114010921}}
+{"timestamp":"2026-01-11T06:46:50.928Z","level":"INFO","message":"<--","context":{"method":"POST","path":"/api/auth/login","ip":"127.0.0.1","userAgent":"Deno/2.6.4","timestamp":1768114010928}}
+{"timestamp":"2026-01-11T06:46:50.929Z","level":"INFO","message":"-->","context":{"status":404,"duration":"1ms","timestamp":1768114010929}}
