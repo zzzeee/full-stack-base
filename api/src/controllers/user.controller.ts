@@ -1,10 +1,11 @@
-import { Hono } from 'hono'
+import { Hono } from '@hono/hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { authMiddleware, getCurrentUser } from '../middlewares/auth.middleware.ts'
 import { userService } from '../services/user.service.ts'
 import { success, error } from '../lib/response.ts'
 import type { UpdateProfileRequest } from '../types/user.types.ts'
+import { getErrorMessage } from '../untils/error.ts'
 
 const userController = new Hono()
 
@@ -28,7 +29,7 @@ userController.get('/profile', async (c) => {
         return success(profile, '获取成功')
     } catch (err) {
         console.error('获取资料失败:', err)
-        return error(err.message || '获取失败', 400)
+        return error(getErrorMessage(err) || '获取失败', 400)
     }
 })
 
@@ -43,7 +44,7 @@ userController.put('/profile', zValidator('json', updateProfileSchema), async (c
         return success(updatedProfile, '资料更新成功')
     } catch (err) {
         console.error('更新资料失败:', err)
-        return error(err.message || '更新失败', 400)
+        return error(getErrorMessage(err) || '更新失败', 400)
     }
 })
 

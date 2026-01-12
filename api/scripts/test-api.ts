@@ -1,3 +1,4 @@
+// deno run --allow-net --allow-read --allow-env --env-file=.env scripts/test-api.ts
 import { config } from '../src/config/index.ts'
 
 const API_BASE = `http://localhost:${config.app.port}`
@@ -23,16 +24,19 @@ async function testAPI() {
     const captchaData = await captchaRes.json()
     console.log(`   状态: ${captchaRes.status}`)
     console.log(`   成功:`)
-    console.log(JSON.stringify(captchaData, null, 4))
+    // console.log(JSON.stringify(captchaData, null, 4))
+    const code = getCodeBySvg(captchaData.data.svg || '');
+    console.log(`   验证码: ${code}`)
 
     // 3. 注册新用户
     console.log('\n3. 注册/登录用户...')
-    const loginRes = await fetch(`${API_BASE}/api/auth/login`, {
+    const loginRes = await fetch(`${API_BASE}/api/auth/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             email: 'test@example.com',
-            password: '123456'
+            otp: code,
+            type: 'email',
         })
     })
     const loginData = await loginRes.json()
@@ -71,6 +75,18 @@ async function testAPI() {
     }
 
     console.log('\n✅ API测试完成!')
+}
+
+const getCodeBySvg = (svg: string): string => {
+    // 解码 Base64
+    const decoder = new TextDecoder();
+    const svgBytes = Uint8Array.from(atob(svg?.split?.(',')?.[1] || ''), c => c.charCodeAt(0));
+    const svgText = decoder.decode(svgBytes);
+
+    // 使用正则表达式提取文本内容
+    const regex = /<text[^>]*>[\s\n]*([\d]+)[\s\n]*<\/text>/;
+    const result = svgText.match(regex);
+    return result?.[1] || '';
 }
 
 // 运行测试

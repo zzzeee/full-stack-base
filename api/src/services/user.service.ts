@@ -1,5 +1,4 @@
 import { supabaseClient } from '../lib/supabase.client.ts'
-import { config } from '../config/index.ts'
 import type { UserProfile, RegisterRequest, UpdateProfileRequest } from '../types/user.types.ts'
 
 export const userService = {
@@ -152,7 +151,7 @@ export const userService = {
     },
 
     // 更新用户在Auth中的metadata
-    async updateAuthMetadata(userId: string, metadata: Record<string, any>) {
+    async updateAuthMetadata(userId: string, metadata: Record<string, unknown>) {
         const { error } = await supabaseClient.auth.admin.updateUserById(
             userId,
             { user_metadata: metadata }

@@ -13,7 +13,7 @@ export interface LogEntry {
     timestamp: string
     level: LogLevel
     message: string
-    context?: Record<string, any>
+    context?: Record<string, unknown>
     ip?: string
     userId?: string
     path?: string
@@ -66,7 +66,7 @@ export class Logger {
         }
     }
 
-    private log(level: LogLevel, message: string, context?: Record<string, any>) {
+    private log(level: LogLevel, message: string, context?: Record<string, unknown>) {
         const entry: LogEntry = {
             timestamp: new Date().toISOString(),
             level,
@@ -102,19 +102,19 @@ export class Logger {
     }
 
     // 公共方法
-    debug(message: string, context?: Record<string, any>) {
+    debug(message: string, context?: Record<string, unknown>) {
         this.log(LogLevel.DEBUG, message, context)
     }
 
-    info(message: string, context?: Record<string, any>) {
+    info(message: string, context?: Record<string, unknown>) {
         this.log(LogLevel.INFO, message, context)
     }
 
-    warn(message: string, context?: Record<string, any>) {
+    warn(message: string, context?: Record<string, unknown>) {
         this.log(LogLevel.WARN, message, context)
     }
 
-    error(message: string, error?: Error, context?: Record<string, any>) {
+    error(message: string, error?: Error, context?: Record<string, unknown>) {
         this.log(LogLevel.ERROR, message, { ...context, error })
     }
 

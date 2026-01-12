@@ -1,15 +1,16 @@
-import { Hono } from 'hono'
+import { Hono } from '@hono/hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { authService } from '../services/auth.service.ts'
 import { userService } from '../services/user.service.ts'
 import { success, error } from '../lib/response.ts'
+import { getErrorMessage } from '../untils/error.ts'
 
 const authController = new Hono()
 
 // 验证码请求Schema
 const otpRequestSchema = z.object({
-    email: z.string().email().optional(),
+    email: z.email().optional(),
     phone: z.string().regex(/^1[3-9]\d{9}$/).optional(),
     type: z.enum(['email', 'sms']).default('email')
 }).refine(data => data.email || data.phone, {
@@ -23,7 +24,7 @@ const captchaRequestSchema = z.object({
 
 // OTP验证Schema
 const verifyOTPSchema = z.object({
-    email: z.string().email().optional(),
+    email: z.email().optional(),
     phone: z.string().regex(/^1[3-9]\d{9}$/).optional(),
     otp: z.string().length(6),
     type: z.enum(['email', 'sms']).default('email')
@@ -33,7 +34,7 @@ const verifyOTPSchema = z.object({
 
 // 密码登录Schema
 const passwordLoginSchema = z.object({
-    email: z.string().email(),
+    email: z.email(),
     password: z.string().min(6),
     captchaCode: z.string().optional() // 图形验证码（可选）
 })
@@ -49,7 +50,7 @@ authController.post('/otp/send', zValidator('json', otpRequestSchema), async (c)
         return success(result, '验证码发送成功')
     } catch (err) {
         console.error('发送验证码失败:', err)
-        return error(err.message || '发送失败', 400)
+        return error((err instanceof Error ? err.message : String(err)) || '发送失败', 400)
     }
 })
 
@@ -83,12 +84,12 @@ authController.post('/otp/verify', zValidator('json', verifyOTPSchema), async (c
         }, '登录成功')
     } catch (err) {
         console.error('OTP验证失败:', err)
-        return error(err.message || '验证失败', 400)
+        return error(getErrorMessage(err) || '验证失败', 400)
     }
 })
 
 // 3. 获取图形验证码（防机器人）
-authController.post('/captcha', zValidator('json', captchaRequestSchema), async (c) => {
+authController.post('/captcha', zValidator('json', captchaRequestSchema), (c) => {
     const { type } = c.req.valid('json')
     const captcha = authService.generateSimpleCaptcha()
 
@@ -115,7 +116,7 @@ authController.post('/password/login', zValidator('json', passwordLoginSchema), 
         }, '登录成功')
     } catch (err) {
         console.error('密码登录失败:', err)
-        return error(err.message || '登录失败', 400)
+        return error(getErrorMessage(err) || '登录失败', 400)
     }
 })
 

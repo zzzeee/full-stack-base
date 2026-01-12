@@ -1,14 +1,17 @@
 {
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.11.3",
+    "hono/factory": "jsr:@hono/hono@^4.11.3/factory",
+    "hono/cors": "jsr:@hono/hono@^4.11.3/cors",
+    "hono/logger": "jsr:@hono/hono@^4.11.3/logger",
     "@hono/zod-validator": "jsr:@hono/zod-validator@^0.7.6",
     "@std/crypto": "jsr:@std/crypto@^1.0.5",
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
     "@std/fs": "jsr:@std/fs@^1.0.21",
     "@std/path": "jsr:@std/path@^1.1.4",
+    "@supabase/auth-js": "npm:@supabase/auth-js@^2.90.1",
     "@supabase/postgrest-js": "npm:@supabase/postgrest-js@^2.90.1",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.90.1",
-    "hono": "npm:hono@^4.11.3",
     "zod": "npm:zod@^4.3.5"
   },
 

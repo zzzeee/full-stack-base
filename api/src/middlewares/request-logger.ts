@@ -1,6 +1,7 @@
+import { Context, Next } from '@hono/hono'
 import { logger } from '../lib/logger.ts'
 
-export const requestLogger = async (c, next) => {
+export const requestLogger = async (c: Context, next: Next) => {
     const start = Date.now()
 
     // 获取客户端 IP（支持多种情况）

@@ -1,9 +1,10 @@
+import { Context, Next } from '@hono/hono'
 import { createMiddleware } from 'hono/factory'
 import { supabaseClient } from '../lib/supabase.client.ts'
 import { error } from '../lib/response.ts'
 
 // JWT认证中间件
-export const authMiddleware = createMiddleware(async (c, next) => {
+export const authMiddleware = createMiddleware(async (c: Context, next: Next) => {
     const authHeader = c.req.header('Authorization')
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -33,7 +34,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 })
 
 // 获取当前用户（在控制器中使用）
-export function getCurrentUser(c: any) {
+export function getCurrentUser(c: Context) {
     const user = c.get('user')
     if (!user) {
         throw new Error('用户未认证')

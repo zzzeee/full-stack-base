@@ -36,7 +36,8 @@ interface QueryOptions {
 export class DatabaseService {
     /** 内部：应用 where 条件 */
     private static applyWhere(
-        query: PostgrestFilterBuilder<any, any, any, any, any, any, any>,
+        query: PostgrestFilterBuilder<any, any, any, any, unknown, unknown, unknown>,
+        // Generic type 'PostgrestFilterBuilder<ClientOptions, Schema, Row, Result$1, RelationName, Relationships, Method>' requires between 4 and 7 type arguments.deno-ts(2707)
         where?: WhereOptions
     ) {
         if (!where) return query
@@ -80,7 +81,7 @@ export class DatabaseService {
      *    email: 'test@example.com',
      * })
      * */
-    static async findOne<T = any>(
+    static async findOne<T = unknown>(
         table: string,
         where: WhereOptions,
         select: string = '*'
@@ -103,7 +104,7 @@ message=${error.message}`
         return data as T | null
     }
 
-    static async findById<T = unknown>(
+    static findById<T = unknown>(
         table: string,
         id: string | number,
         idField: string = 'id',
@@ -155,7 +156,7 @@ message=${error.message}`
     }
 
     /** 插入 */
-    static async insert<T = any>(table: string, data: Record<string, any>) {
+    static async insert<T = unknown>(table: string, data: Record<string, unknown>) {
         const { data: result, error } = await supabaseClient
             .from(table)
             .insert(data)
@@ -170,10 +171,10 @@ message=${error.message}`
     }
 
     /** 更新 */
-    static async update<T = any>(
+    static async update<T = unknown>(
         table: string,
         where: WhereOptions,
-        updates: Record<string, any>
+        updates: Record<string, unknown>
     ) {
         let query = supabaseClient.from(table).update(updates)
         query = this.applyWhere(query, where)
@@ -212,9 +213,9 @@ message=${error.message}`
     }
 
     // 批量插入
-    static async insertMany<T = any>(
+    static async insertMany<T = unknown>(
         table: string,
-        rows: Record<string, any>[]
+        rows: Record<string, unknown>[]
     ): Promise<T[]> {
         if (!rows.length) return []
     

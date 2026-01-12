@@ -1,4 +1,4 @@
-// scripts/test-db.ts
+// deno run --env-file=.env --allow-net --allow-env --allow-read scripts/test-db.ts
 import { config } from '../src/config/index.ts'
 import { testSupabaseConnection } from '../src/lib/supabase.client.ts'
 
@@ -15,11 +15,11 @@ console.log('\n4. 📋 连接状态汇总:')
 console.log(`   Supabase: ${supabaseOk ? '✅ 连接成功' : '❌ 连接失败'}`)
 
 if (!supabaseOk) {
-  console.log('\n💡 建议:')
-  console.log('   1. 确保 Supabase 已启动: supabase start')
-  console.log('   2. 检查 .env 文件配置')
-  console.log('   3. 检查网络连接')
-  Deno.exit(1)
+    console.log('\n💡 建议:')
+    console.log('   1. 确保 Supabase 已启动: supabase start')
+    console.log('   2. 检查 .env 文件配置')
+    console.log('   3. 检查网络连接')
+    Deno.exit(1)
 }
 
 console.log('\n🎉 所有数据库连接正常！')

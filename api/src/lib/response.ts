@@ -1,5 +1,5 @@
 // 统一API响应格式
-export class ApiResponse<T = any> {
+export class ApiResponse<T = unknown> {
     constructor(
         public success: boolean,
         public data?: T,
