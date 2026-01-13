@@ -254,14 +254,14 @@ export class BaseRepository {
      * @example
      * const user = await repo.findById('users', '123');
      */
-    findById<T>(
-        table: keyof Database['public']['Tables'],
-        id: string | number,
-        options?: { idField?: string; select?: string }
-    ): Promise<T | null> {
-        const { idField = 'id', select = '*' } = options ?? {};
-        return this.findOne<T>(table, { [idField]: id }, select);
-    }
+    // findById<T>(
+    //     table: keyof Database['public']['Tables'],
+    //     id: string | number,
+    //     options?: { idField?: string; select?: string }
+    // ): Promise<T | null> {
+    //     const { idField = 'id', select = '*' } = options ?? {};
+    //     return this.findOne<T>(table, { [idField]: id }, select);
+    // }
 
     /**
      * 查询多条记录
@@ -589,7 +589,7 @@ export const db = {
     // 查询
     query: repository.query.bind(repository),
     findOne: repository.findOne.bind(repository),
-    findById: repository.findById.bind(repository),
+    // findById: repository.findById.bind(repository),
     count: repository.count.bind(repository),
     exists: repository.exists.bind(repository),
 
@@ -611,7 +611,7 @@ export const db = {
 export const adminDb = {
     query: adminRepository.query.bind(adminRepository),
     findOne: adminRepository.findOne.bind(adminRepository),
-    findById: adminRepository.findById.bind(adminRepository),
+    // findById: adminRepository.findById.bind(adminRepository),
     insert: adminRepository.insert.bind(adminRepository),
     update: adminRepository.update.bind(adminRepository),
     delete: adminRepository.delete.bind(adminRepository),

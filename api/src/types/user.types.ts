@@ -1,33 +1,29 @@
-export interface UserProfile {
-    id: string
-    email: string
-    phone?: string
-    nickname?: string
-    avatar?: string
-    bio?: string
-    created_at: string
-    updated_at: string
+// src/types/user.types.ts
+/**
+ * 用户相关类型定义
+ */
+
+import type { User } from './auth.types.ts';
+
+/**
+ * 用户公开资料（不包含敏感信息）
+ */
+export type UserProfile = Omit<User, 'password_hash' | 'metadata'>;
+
+/**
+ * 用户更新数据
+ */
+export interface UserUpdateData {
+  name?: string;
+  avatar_url?: string;
+  bio?: string;
+  phone?: string;
 }
 
-export interface LoginRequest {
-    email: string
-    password: string
-    captcha?: string // 验证码（可选，根据需求）
-}
-
-export interface RegisterRequest extends LoginRequest {
-    nickname?: string
-    phone?: string
-}
-
-export interface UpdateProfileRequest {
-    nickname?: string
-    phone?: string
-    avatar?: string
-    bio?: string
-}
-
-export interface AuthResponse {
-    user: UserProfile
-    token: string
+/**
+ * 修改密码数据
+ */
+export interface ChangePasswordData {
+  old_password: string;
+  new_password: string;
 }
