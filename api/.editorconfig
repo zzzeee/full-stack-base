@@ -1,0 +1,68 @@
+# .editorconfig
+# EditorConfig 帮助开发者在不同的编辑器和 IDE 之间保持一致的代码风格
+# https://editorconfig.org
+
+# 顶级配置文件，停止向上查找
+root = true
+
+# 所有文件的默认配置
+[*]
+charset = utf-8                      # 文件编码
+end_of_line = lf                     # 换行符类型（LF for Unix/Linux/macOS）
+insert_final_newline = true          # 文件末尾插入空行
+trim_trailing_whitespace = true      # 删除行尾空格
+indent_style = space                 # 使用空格缩进
+indent_size = 4                      # 缩进大小为 4
+
+# TypeScript/JavaScript 文件
+[*.{ts,js,tsx,jsx}]
+indent_size = 4
+max_line_length = 100                # 最大行长度
+
+[Deno]
+indent_size = 4
+
+# JSON 文件
+[*.json]
+indent_size = 4
+
+# YAML 文件
+[*.{yml,yaml}]
+indent_size = 4
+
+# Markdown 文件
+[*.md]
+trim_trailing_whitespace = false     # Markdown 中保留行尾空格（用于换行）
+max_line_length = off                # 不限制行长度
+
+# SQL 文件
+[*.sql]
+indent_size = 4
+
+# Shell 脚本
+[*.sh]
+end_of_line = lf
+indent_size = 4
+
+# Makefile 必须使用 Tab
+[Makefile]
+indent_style = tab
+
+# 配置文件
+[{package.json,deno.json,*.config.js}]
+indent_size = 4
+
+# HTML/CSS
+[*.{html,css,scss}]
+indent_size = 4
+
+# Docker 文件
+[Dockerfile]
+indent_size = 4
+
+# Git 配置
+[.gitattributes]
+end_of_line = lf
+
+[.gitignore]
+end_of_line = lf

@@ -1,5 +1,5 @@
 // deno run --allow-net --allow-read --allow-env --env-file=.env scripts/test-api.ts
-import { config } from '../src/config/index.ts'
+import { config } from '@config/app.config.ts'
 
 const API_BASE = `http://localhost:${config.app.port}`
 

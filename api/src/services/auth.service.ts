@@ -1,5 +1,5 @@
 import { supabaseClient } from '../lib/supabase.client.ts'
-import { config } from '../config/index.ts'
+import { config } from '@config/app.config.ts'
 import type { VerifyEmailOtpParams, VerifyMobileOtpParams } from '@supabase/auth-js'
 
 export const authService = {

@@ -1,7 +1,7 @@
 import { Hono } from '@hono/hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import { config } from './config/index.ts'
+import { config } from '@config/app.config.ts'
 import { testSupabaseConnection } from './lib/supabase.client.ts'
 // import { requestLogger } from './middlewares/request-logger.ts'
 

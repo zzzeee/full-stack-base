@@ -1,67 +1,184 @@
-import { createClient } from '@supabase/supabase-js'
-import { config } from '../config/index.ts'
+// src/lib/supabase.client.ts
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database.types.ts';
+import { config } from '@config/index.ts';
+import { logger } from './logger.ts';
+import { toError } from "../untils/error.ts";
 
-// 创建 Supabase 客户端
-export const supabaseClient = createClient(
-    config.supabase.url,
-    config.supabase.anonKey,
-    {
+/**
+ * Supabase 客户端类型
+ * 使用生成的 Database 类型提供完整的类型安全
+ */
+export type TypedSupabaseClient = SupabaseClient<Database>;
+
+/**
+ * Supabase 客户端配置选项
+ */
+interface SupabaseClientOptions {
+    useServiceRole?: boolean; // 是否使用 Service Role Key（绕过 RLS）
+    persistSession?: boolean;
+    autoRefreshToken?: boolean;
+}
+
+/**
+ * 创建 Supabase 客户端实例
+ * @param options - 客户端配置选项
+ * @returns 类型安全的 Supabase 客户端
+ */
+function createSupabaseClient(
+    options: SupabaseClientOptions = {}
+): SupabaseClient<Database> {  // 返回完整类型
+    const {
+        useServiceRole = false,
+        persistSession = false,
+        autoRefreshToken = false,
+    } = options;
+
+    // 验证必需的环境变量
+    if (!config.supabase.url) {
+        throw new Error('SUPABASE_URL is not configured');
+    }
+
+    // 根据选项选择使用的 Key
+    const apiKey = useServiceRole
+        ? config.supabase.serviceRoleKey
+        : config.supabase.anonKey;
+
+    if (!apiKey) {
+        const keyType = useServiceRole ? 'SUPABASE_SERVICE_ROLE_KEY' : 'SUPABASE_ANON_KEY';
+        throw new Error(`${keyType} is not configured`);
+    }
+
+    // 从环境变量读取 environment
+    const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
+
+    // 日志记录（仅开发环境）
+    if (isDevelopment) {
+        logger.info('Creating Supabase client', {
+            url: config.supabase.url,
+            useServiceRole,
+            persistSession,
+        });
+    }
+
+    return createClient<Database>(config.supabase.url, apiKey, {
         auth: {
-            persistSession: false, // API 服务通常不需要持久化
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
+            persistSession,
+            autoRefreshToken,
+            detectSessionInUrl: false, // API 服务不需要检测 URL 中的 session
+            flowType: 'pkce', // 使用 PKCE 流程（更安全）
         },
         db: {
-            schema: 'public' // 默认 schema
+            schema: 'public', // 默认 schema
         },
         global: {
             headers: {
-                'x-application-name': 'hono-api',
-                'x-app-version': '1.0.0'
-            }
-        }
-    }
-)
+                'x-application-name': config.app.name,
+                'x-app-version': config.app.version,
+                'x-client-info': 'hono-api', // 用于 Supabase 分析
+            },
+        },
+    });
+}
 
-// 测试连接
-export async function testSupabaseConnection() {
+// ==================== 导出客户端实例 ====================
+
+/**
+ * 默认 Supabase 客户端（使用 Anon Key）
+ * 用于需要遵守 RLS（Row Level Security）的操作
+ * 
+ * @example
+ * ```ts
+ * const { data, error } = await supabase
+ *   .from('users')
+ *   .select('*')
+ *   .eq('id', userId);
+ * ```
+ */
+export const supabase: TypedSupabaseClient = createSupabaseClient();
+
+/**
+ * Admin Supabase 客户端（使用 Service Role Key）
+ * 绕过所有 RLS 策略，拥有完全权限
+ * ⚠️ 仅在服务端使用，不要暴露给客户端
+ * 
+ * @example
+ * ```ts
+ * // 管理员操作：删除任何用户
+ * const { error } = await supabaseAdmin
+ *   .from('users')
+ *   .delete()
+ *   .eq('id', userId);
+ * ```
+ */
+export const supabaseAdmin: TypedSupabaseClient = createSupabaseClient({
+    useServiceRole: true,
+});
+
+// ==================== 工具函数 ====================
+
+/**
+ * 创建带有用户上下文的 Supabase 客户端
+ * 用于在已知用户 Token 的情况下执行操作
+ * 
+ * @param accessToken - 用户的 JWT Access Token
+ * @returns 带有用户上下文的 Supabase 客户端
+ * 
+ * @example
+ * ```ts
+ * const userClient = createUserClient(userToken);
+ * const { data } = await userClient.from('posts').select('*');
+ * ```
+ */
+export function createUserClient(accessToken: string): TypedSupabaseClient {
+    const client = createSupabaseClient();
+
+    // 设置用户的 Access Token
+    client.auth.setSession({
+        access_token: accessToken,
+        refresh_token: '', // API 服务通常不需要 refresh token
+    });
+
+    return client;
+}
+
+/**
+ * 健康检查：测试 Supabase 连接
+ * @returns 连接是否正常
+ */
+export async function checkSupabaseHealth(): Promise<boolean> {
     try {
-        // 方法1: 查询一个简单的表（比如 users）
-        const { data, error } = await supabaseClient
+        // 执行一个简单的查询测试连接
+        const { data, error } = await supabase
             .from('users')
             .select('count')
             .limit(1)
-            .single()
+            .single() // 返回单行
 
-        // if (error && error.code !== 'PGRST116') { // 忽略表不存在错误
-        if (error) { // 忽略表不存在错误
-            throw error
-        }
-
-        console.log('✅ Supabase 客户端连接成功')
         console.log('data:', data)
-        return true
-    } catch (error) {
-        console.error('❌ Supabase 连接失败:', error instanceof Error ? error.message : String(error))
-
-        // 方法2: 尝试简单的健康检查
-        try {
-            //   const response = await fetch(`${config.supabase.url}/rest/v1/`, {
-            const response = await fetch(`${config.supabase.url}/auth/v1/health`, {
-                headers: {
-                    'apikey': config.supabase.anonKey
-                }
-            })
-            console.log(`📡 REST API 响应: ${response.status}`)
-            response.json().
-                then(data => console.log('response json: ', data)).
-                catch(() => {
-                    response.text().then((txt) => console.log('response text: ', txt));
-                })
-            return response.ok
-        } catch (fetchError) {
-            console.error('📡 REST API 也失败:', fetchError instanceof Error ? fetchError.message : String(fetchError))
-            return false
-        }
+        return !error;
+    } catch (err) {
+        const error = toError(err);
+        logger.error('Supabase health check failed', {
+            message: error.message,
+            stack: error.stack,
+        });
+        return false;
     }
 }
+
+/**
+ * 获取当前 Supabase 客户端配置信息（用于调试）
+ */
+export function getSupabaseInfo() {
+    return {
+        url: config.supabase.url,
+        environment: Deno.env.get('ENVIRONMENT') || 'development',
+        hasServiceRoleKey: !!config.supabase.serviceRoleKey,
+        hasAnonKey: !!config.supabase.anonKey,
+    };
+}
+
+// ==================== 默认导出 ====================
+
+export default supabase;

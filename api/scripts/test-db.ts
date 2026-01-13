@@ -1,5 +1,5 @@
 // deno run --env-file=.env --allow-net --allow-env --allow-read scripts/test-db.ts
-import { config } from '../src/config/index.ts'
+import { config } from '@config/app.config.ts'
 import { testSupabaseConnection } from '../src/lib/supabase.client.ts'
 
 console.log('🧪 测试数据库连接...\n')

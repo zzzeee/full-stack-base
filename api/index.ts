@@ -1,20 +1,13 @@
-import app from './src/app.ts'
-import { config } from './src/config/index.ts'
+// index.ts
+import { validateConfig, config } from './src/config/index.ts';
+import app from './src/app.ts';
 
-const PORT = config.app.port
+// ✅ 启动时先验证配置
+validateConfig();
 
-console.log(`
-🚀 Hono API 服务器启动中...
-📍 环境: ${config.app.env}
-🌐 端口: ${PORT}
-🔗 本地地址: http://localhost:${PORT}
-📚 API文档:
-  GET  /health         健康检查
-  POST /api/auth/captcha 获取验证码
-  POST /api/auth/login   登录/注册
-  GET  /api/users/profile 获取资料
-  PUT  /api/users/profile 更新资料
-`)
+const port = config.app.port;
 
-// 启动服务器
-Deno.serve({ port: PORT }, app.fetch)
+console.log(`🚀 Server running at http://localhost:${port}`);
+console.log(`📦 Environment: ${config.app.environment}`);
+
+Deno.serve({ port }, app.fetch);
