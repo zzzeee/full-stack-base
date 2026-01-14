@@ -17,7 +17,7 @@ export async function authMiddleware(c: Context, next: Next) {
     try {
         // 1. 从请求头提取 Token
         const authHeader = c.req.header('Authorization');
-        const token = extractTokenFromHeader(authHeader);
+        const token = extractTokenFromHeader(authHeader || '');
 
         if (!token) {
             throw createAuthError.unauthorized('缺少认证令牌');
@@ -58,7 +58,7 @@ export async function authMiddleware(c: Context, next: Next) {
 export async function optionalAuthMiddleware(c: Context, next: Next) {
     try {
         const authHeader = c.req.header('Authorization');
-        const token = extractTokenFromHeader(authHeader);
+        const token = extractTokenFromHeader(authHeader || '');
 
         if (token) {
             const payload = await verifyToken(token);

@@ -16,19 +16,10 @@ export const TEST_CONFIG = {
     timeout: 5000,
 };
 
-// 测试用户数据
-export const TEST_USERS = {
-    testUser: {
-        email: 'test@example.com',
-        password: 'Test1234',
-        name: 'Test User',
-    },
-    newUser: {
-        email: `test-${Date.now()}@example.com`,
-        password: 'NewUser1234',
-        name: 'New Test User',
-    },
-};
+// 全局变量类型
+declare global {
+    var TOKEN: string;
+}
 
 /**
  * 清理测试数据
@@ -38,5 +29,11 @@ export function cleanupTestData() {
     logger.info('Cleaning up test data');
 }
 
-// 测试前执行
+// 程序即将退出时
 // globalThis.addEventListener('beforeunload', cleanupTestData);
+// 程序卸载时, 监听进程信号（如 Ctrl+C）
+// globalThis.addEventListener('unload', cleanupTestData);
+// error
+// globalThis.addEventListener('error', cleanupTestData);
+// 监听未处理的 Promise 拒绝
+// globalThis.addEventListener('unhandledrejection', cleanupTestData);

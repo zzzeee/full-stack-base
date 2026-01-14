@@ -1,10 +1,11 @@
-// tests/integration/api/helpers.ts
+// tests/helpers.ts
 /**
  * 测试辅助函数
  * 提供通用的测试工具方法
  */
 
-import { TEST_CONFIG } from '../../setup.ts';
+import { TEST_CONFIG } from '../setup.ts';
+
 
 /**
  * 发起 HTTP 请求
@@ -19,6 +20,7 @@ export async function request(
     }
 ) {
     const url = `${TEST_CONFIG.baseUrl}${path}`;
+    console.log(method, url);
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',

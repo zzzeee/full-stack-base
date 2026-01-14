@@ -78,7 +78,7 @@ export const registerSchema = z.object({
 
     name: z
         .string()
-        .min(1, '姓名不能为空')
+        // .min(1, '姓名不能为空')
         .min(2, '姓名至少 2 个字符')
         .max(50, '姓名最多 50 个字符')
         .trim(),

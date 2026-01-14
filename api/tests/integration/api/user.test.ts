@@ -8,7 +8,7 @@ import {
     assertEquals,
     assertExists,
 } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { get, put } from './helpers.ts';
+import { get, put } from '../../helpers/index.ts';
 import { authToken, testUser } from './auth.test.ts';
 
 /**

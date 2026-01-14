@@ -7,7 +7,7 @@
 import {
     assertEquals,
 } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { post, randomEmail, randomPassword } from './helpers.ts';
+import { post, randomEmail, randomPassword } from '../../helpers/index.ts';
 
 // 测试用户数据
 const testUser = {

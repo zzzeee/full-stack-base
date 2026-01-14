@@ -3,7 +3,7 @@
     "deno.lint": true,
     "deno.testing.args": [
         "--allow-all",
-        "--env-file=.env",
+        "--env-file=.env"
     ],
     "editor.formatOnSave": false
 }  
