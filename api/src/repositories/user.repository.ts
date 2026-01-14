@@ -6,7 +6,7 @@
 
 import { BaseRepository } from './base.repository.ts';
 import { logger } from '@/lib/logger.ts';
-import type { User, UserInsert, UserUpdate } from '@/types/auth.types.ts';
+import type { User, UserInsert, UserUpdate } from '@/types/user.types.ts';
 
 export class UserRepository extends BaseRepository {
     private readonly table = 'users';
@@ -16,7 +16,7 @@ export class UserRepository extends BaseRepository {
      * @param email - 用户邮箱
      * @returns Promise<User | null> - 用户信息或 null
      */
-    async findByEmail(email: string): Promise<User | null> {
+    findByEmail(email: string): Promise<User | null> {
         logger.debug('Finding user by email', { email });
         return this.findOne<User>(this.table, { email });
     }
@@ -26,7 +26,7 @@ export class UserRepository extends BaseRepository {
      * @param id - 用户 ID
      * @returns Promise<User | null> - 用户信息或 null
      */
-    async findById(id: string): Promise<User | null> {
+    findById(id: string): Promise<User | null> {
         logger.debug('Finding user by id', { id });
         return this.findOne<User>(this.table, { id });
     }
@@ -36,7 +36,7 @@ export class UserRepository extends BaseRepository {
      * @param data - 用户数据
      * @returns Promise<User> - 创建的用户信息
      */
-    async create(data: UserInsert): Promise<User> {
+    create(data: UserInsert): Promise<User> {
         logger.info('Creating user', { email: data.email });
         return this.insert<User>(this.table, data);
     }
@@ -47,7 +47,7 @@ export class UserRepository extends BaseRepository {
      * @param data - 更新数据
      * @returns Promise<User> - 更新后的用户信息
      */
-    async updateById(id: string, data: UserUpdate): Promise<User> {
+    updateById(id: string, data: UserUpdate): Promise<User> {
         logger.info('Updating user', { id, fields: Object.keys(data) });
         return this.update<User>(this.table, { id }, data);
     }
@@ -68,7 +68,7 @@ export class UserRepository extends BaseRepository {
      * @param email - 邮箱
      * @returns Promise<boolean> - 是否存在
      */
-    async emailExists(email: string): Promise<boolean> {
+    emailExists(email: string): Promise<boolean> {
         logger.debug('Checking if email exists', { email });
         return this.exists(this.table, { email });
     }

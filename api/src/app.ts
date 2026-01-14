@@ -4,17 +4,17 @@
  * 注册路由、中间件和错误处理
  */
 
-import { Hono } from '@hono/hono';
+import { Context, Hono } from '@hono/hono';
 import { logger as honoLogger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { prettyJSON } from 'hono/pretty-json';
 
 // 导入路由
-import authRoutes from './routes/auth.routes.ts';
-import userRoutes from './routes/user.routes.ts';
+import authRoutes from '@routes/auth.routes.ts';
+import userRoutes from '@routes/user.routes.ts';
 
 // 导入错误处理
-import { registerErrorHandler } from './lib/errors/error-handler.ts';
+import { registerErrorHandler } from '@lib/errors/error-handler.ts';
 import { logger } from './lib/logger.ts';
 import { checkSupabaseHealth } from './lib/supabase.client.ts';
 
@@ -47,7 +47,7 @@ if (Deno.env.get('ENVIRONMENT') === 'development') {
 
 // ==================== 健康检查 ====================
 
-app.get('/health', async (c) => {
+app.get('/health', async (c: Context) => {
     const supabaseHealthy = await checkSupabaseHealth();
 
     return c.json({
@@ -63,7 +63,7 @@ app.get('/health', async (c) => {
 // ==================== API 路由 ====================
 
 // 根路径
-app.get('/', (c) => {
+app.get('/', (c: Context) => {
     return c.json({
         name: 'My API Project',
         version: '1.0.0',
@@ -79,7 +79,7 @@ app.route('/api/users', userRoutes);
 
 // ==================== 404 处理 ====================
 
-app.notFound((c) => {
+app.notFound((c: Context) => {
     logger.warn('Route not found', {
         method: c.req.method,
         path: c.req.path,

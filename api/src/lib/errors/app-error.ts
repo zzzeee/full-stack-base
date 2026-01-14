@@ -77,5 +77,5 @@ export const createUserError = {
         new AppError(ErrorCodes.USER_NOT_FOUND, undefined, { userId }),
 
     emailTaken: (email: string) =>
-        new AppError(ErrorCodes.USER_EMAIL_TAKEN, undefined, { email }),
+        new AppError(ErrorCodes.USER_EMAIL_ALREADY_EXISTS, undefined, { email }),
 };

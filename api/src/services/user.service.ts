@@ -1,165 +1,217 @@
-import { supabaseClient } from '../lib/supabase.client.ts'
-import type { UserProfile, RegisterRequest, UpdateProfileRequest } from '../types/user.types.ts'
+// src/services/user.service.ts
+/**
+ * 用户业务逻辑层
+ * 处理用户相关的核心业务逻辑
+ */
 
-export const userService = {
-    // 查找用户（邮箱）
-    async findByEmail(email: string): Promise<UserProfile | null> {
-        const { data, error: dbError } = await supabaseClient
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .maybeSingle()
+import { userRepository } from '@/repositories/user.repository.ts';
+import { hashPassword, verifyPassword } from '@/lib/password.ts';
+import { logger } from '@/lib/logger.ts';
+import { AppError } from '@/lib/errors/app-error.ts';
+import { ErrorCodes } from '@/lib/errors/error-codes.ts';
+import type { UserProfile, UserUpdateData, ChangePasswordData } from '@/types/user.types.ts';
 
-        if (dbError) {
-            console.error('查询用户失败:', dbError)
-            return null
-        }
-        return data
-    },
+/**
+ * 用户服务类
+ */
+export class UserService {
+  /**
+   * 获取用户资料
+   * @param userId - 用户 ID
+   * @returns Promise<UserProfile> - 用户资料
+   */
+  async getUserProfile(userId: string): Promise<UserProfile> {
+    logger.debug('Getting user profile', { userId });
 
-    // 创建用户（先创建Auth用户，再创建profile）
-    async create(userData: RegisterRequest): Promise<UserProfile> {
-        // 1. 先在Supabase Auth中创建用户
-        const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
-            email: userData.email,
-            password: userData.password,
-            email_confirm: true, // 自动确认邮箱
-            user_metadata: {
-                nickname: userData.nickname || userData.email.split('@')[0]
-            }
-        })
+    const user = await userRepository.findById(userId);
 
-        if (authError) {
-            console.error('创建Auth用户失败:', authError)
-            throw new Error(`创建用户失败: ${authError.message}`)
-        }
-
-        // 2. 在users表中创建用户资料
-        const { data, error: dbError } = await supabaseClient
-            .from('users')
-            .insert([{
-                id: authData.user.id, // 使用Auth的user.id
-                email: userData.email,
-                nickname: userData.nickname || userData.email.split('@')[0],
-                phone: userData.phone || null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }])
-            .select()
-            .single()
-
-        if (dbError) {
-            // 如果users表插入失败，尝试删除Auth用户（清理）
-            await supabaseClient.auth.admin.deleteUser(authData.user.id)
-            throw new Error(`创建用户资料失败: ${dbError.message}`)
-        }
-
-        return data
-    },
-
-    // 更新用户资料
-    async updateProfile(userId: string, updates: UpdateProfileRequest): Promise<UserProfile> {
-        const updateData = {
-            ...updates,
-            updated_at: new Date().toISOString()
-        }
-
-        const { data, error: dbError } = await supabaseClient
-            .from('users')
-            .update(updateData)
-            .eq('id', userId)
-            .select()
-            .single()
-
-        if (dbError) {
-            console.error('更新用户资料失败:', dbError)
-            throw new Error(`更新失败: ${dbError.message}`)
-        }
-
-        return data
-    },
-
-    // 获取用户资料
-    async getProfile(userId: string): Promise<UserProfile> {
-        const { data, error: dbError } = await supabaseClient
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single()
-
-        if (dbError) {
-            console.error('获取用户资料失败:', dbError)
-            throw new Error(`用户不存在: ${dbError.message}`)
-        }
-
-        return data
-    },
-
-    // 登录（新用户自动注册）
-    async loginOrRegister(loginData: RegisterRequest): Promise<{ user: UserProfile; token: string }> {
-        try {
-            // 1. 尝试登录
-            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                email: loginData.email,
-                password: loginData.password
-            })
-
-            // 2. 如果登录失败且是因为用户不存在，则注册
-            if (authError) {
-                if (authError.message.includes('Invalid login credentials')) {
-                    console.log('用户不存在，自动注册:', loginData.email)
-                    const newUser = await this.create(loginData)
-
-                    // 注册后自动登录
-                    const { data: newAuthData, error: newAuthError } = await supabaseClient.auth.signInWithPassword({
-                        email: loginData.email,
-                        password: loginData.password
-                    })
-
-                    if (newAuthError) {
-                        throw new Error(`注册后登录失败: ${newAuthError.message}`)
-                    }
-
-                    return {
-                        user: newUser,
-                        token: newAuthData.session.access_token
-                    }
-                }
-                throw new Error(`登录失败: ${authError.message}`)
-            }
-
-            // 3. 登录成功，获取或创建用户资料
-            let user = await this.findByEmail(loginData.email)
-
-            if (!user) {
-                // 用户存在于Auth但不在users表，自动同步
-                user = await this.create({
-                    email: loginData.email,
-                    password: loginData.password, // 仅用于类型，实际上不重复创建
-                    nickname: authData.user.user_metadata?.nickname
-                })
-            }
-
-            return {
-                user,
-                token: authData.session.access_token
-            }
-        } catch (error) {
-            console.error('登录/注册过程错误:', error)
-            throw error
-        }
-    },
-
-    // 更新用户在Auth中的metadata
-    async updateAuthMetadata(userId: string, metadata: Record<string, unknown>) {
-        const { error } = await supabaseClient.auth.admin.updateUserById(
-            userId,
-            { user_metadata: metadata }
-        )
-
-        if (error) {
-            console.error('更新Auth metadata失败:', error)
-            throw new Error(`更新用户信息失败: ${error.message}`)
-        }
+    if (!user) {
+      throw new AppError(ErrorCodes.USER_NOT_FOUND, '用户不存在');
     }
+
+    // 移除敏感字段
+    const profile: UserProfile = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      bio: user.bio,
+      phone: user.phone,
+      status: user.status,
+      email_verified: user.email_verified,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      last_login_at: user.last_login_at,
+    };
+
+    return profile;
+  }
+
+  /**
+   * 更新用户资料
+   * @param userId - 用户 ID
+   * @param data - 更新数据
+   * @returns Promise<UserProfile> - 更新后的用户资料
+   */
+  async updateUserProfile(
+    userId: string,
+    data: UserUpdateData
+  ): Promise<UserProfile> {
+    logger.info('Updating user profile', {
+      userId,
+      fields: Object.keys(data),
+    });
+
+    // 1. 检查用户是否存在
+    const existingUser = await userRepository.findById(userId);
+    if (!existingUser) {
+      throw new AppError(ErrorCodes.USER_NOT_FOUND, '用户不存在');
+    }
+
+    // 2. 过滤出有效的更新字段
+    const updates: Record<string, unknown> = {};
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.bio !== undefined) updates.bio = data.bio;
+    if (data.phone !== undefined) updates.phone = data.phone || null;
+
+    // 3. 如果没有任何更新字段，返回错误
+    if (Object.keys(updates).length === 0) {
+      throw new AppError(
+        ErrorCodes.VALIDATION_ERROR,
+        '至少需要提供一个更新字段'
+      );
+    }
+
+    // 4. 更新用户资料
+    const updatedUser = await userRepository.updateById(userId, updates);
+
+    logger.info('User profile updated successfully', { userId });
+
+    // 5. 返回更新后的资料
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      avatar_url: updatedUser.avatar_url,
+      bio: updatedUser.bio,
+      phone: updatedUser.phone,
+      status: updatedUser.status,
+      email_verified: updatedUser.email_verified,
+      created_at: updatedUser.created_at,
+      updated_at: updatedUser.updated_at,
+      last_login_at: updatedUser.last_login_at,
+    };
+  }
+
+  /**
+   * 更新用户头像
+   * @param userId - 用户 ID
+   * @param avatarUrl - 头像 URL
+   * @returns Promise<string> - 新的头像 URL
+   */
+  async updateUserAvatar(userId: string, avatarUrl: string): Promise<string> {
+    logger.info('Updating user avatar', { userId });
+
+    // 1. 检查用户是否存在
+    const existingUser = await userRepository.findById(userId);
+    if (!existingUser) {
+      throw new AppError(ErrorCodes.USER_NOT_FOUND, '用户不存在');
+    }
+
+    // 2. 更新头像
+    const updatedUser = await userRepository.updateById(userId, {
+      avatar_url: avatarUrl,
+    });
+
+    logger.info('User avatar updated successfully', { userId });
+
+    return updatedUser.avatar_url || '';
+  }
+
+  /**
+   * 修改用户密码
+   * @param userId - 用户 ID
+   * @param data - 修改密码数据
+   * @returns Promise<void>
+   */
+  async changeUserPassword(
+    userId: string,
+    data: ChangePasswordData
+  ): Promise<void> {
+    logger.info('Changing user password', { userId });
+
+    // 1. 查找用户
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new AppError(ErrorCodes.USER_NOT_FOUND, '用户不存在');
+    }
+
+    // 2. 检查是否已设置密码
+    if (!user.password_hash) {
+      throw new AppError(
+        ErrorCodes.AUTH_PASSWORD_NOT_SET,
+        '该账号未设置密码，无法修改'
+      );
+    }
+
+    // 3. 验证旧密码
+    const isValidOldPassword = await verifyPassword(
+      data.old_password,
+      user.password_hash
+    );
+
+    if (!isValidOldPassword) {
+      throw new AppError(
+        ErrorCodes.AUTH_INVALID_OLD_PASSWORD,
+        '旧密码错误'
+      );
+    }
+
+    // 4. 检查新旧密码是否相同
+    if (data.old_password === data.new_password) {
+      throw new AppError(
+        ErrorCodes.VALIDATION_ERROR,
+        '新密码不能与旧密码相同'
+      );
+    }
+
+    // 5. 加密新密码
+    const newPasswordHash = await hashPassword(data.new_password);
+
+    // 6. 更新密码
+    await userRepository.updateById(userId, {
+      password_hash: newPasswordHash,
+    });
+
+    logger.info('User password changed successfully', { userId });
+  }
+
+  /**
+   * 获取用户公开资料
+   * @param userId - 用户 ID
+   * @returns Promise<Partial<UserProfile>> - 用户公开资料
+   */
+  async getUserPublicProfile(userId: string): Promise<Partial<UserProfile>> {
+    logger.debug('Getting user public profile', { userId });
+
+    const user = await userRepository.findById(userId);
+
+    if (!user) {
+      throw new AppError(ErrorCodes.USER_NOT_FOUND, '用户不存在');
+    }
+
+    // 只返回公开字段
+    return {
+      id: user.id,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      bio: user.bio,
+      created_at: user.created_at,
+    };
+  }
 }
+
+/**
+ * 导出单例
+ */
+export const userService = new UserService();

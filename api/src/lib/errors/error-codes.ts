@@ -3,6 +3,8 @@
  * 错误码常量
  */
 
+import { ContentfulStatusCode } from '@hono/hono/utils/http-status';
+
 export const ErrorCodes = {
     // 通用错误 00-XXXX
     INTERNAL_ERROR: '00-0001',
@@ -34,7 +36,7 @@ export const ErrorCodes = {
     EMAIL_SEND_FAILED: '40-0001',
 } as const;
 
-export const ErrorStatusMap: Record<string, number> = {
+export const ErrorStatusMap: Record<string, ContentfulStatusCode> = {
     [ErrorCodes.INTERNAL_ERROR]: 500,
     [ErrorCodes.VALIDATION_ERROR]: 400,
     [ErrorCodes.NOT_FOUND]: 404,

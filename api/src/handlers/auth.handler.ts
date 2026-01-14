@@ -8,6 +8,12 @@ import type { Context } from '@hono/hono';
 import { authService } from '@/services/auth.service.ts';
 import { logger } from '@/lib/logger.ts';
 import { apiResponse } from '@/lib/errors/api-response.ts';
+import { 
+    SendVerificationCodeInput,
+    VerificationCodeLoginInput,
+    PasswordLoginInput,
+    RegisterInput,
+} from '@schemas/auth.schema.ts'
 
 /**
  * 获取客户端 IP 地址
@@ -48,11 +54,11 @@ function getUserAgent(c: Context): string | undefined {
  * @returns { success: true, message: string }
  */
 export async function sendVerificationCode(c: Context) {
-    const body = c.req.valid('json');
+    const body: SendVerificationCodeInput = await c.req.json();
 
     await authService.sendVerificationCode(
         body.email,
-        body.purpose || 'login'
+        body.purpose
     );
 
     return c.json(
@@ -69,7 +75,7 @@ export async function sendVerificationCode(c: Context) {
  * @returns { success: true, data: LoginResponse }
  */
 export async function loginWithVerificationCode(c: Context) {
-    const body = c.req.valid('json');
+    const body: VerificationCodeLoginInput = await c.req.json();
     const ipAddress = getClientIp(c);
     const userAgent = getUserAgent(c);
 
@@ -96,7 +102,7 @@ export async function loginWithVerificationCode(c: Context) {
  * @returns { success: true, data: LoginResponse }
  */
 export async function loginWithPassword(c: Context) {
-    const body = c.req.valid('json');
+    const body: PasswordLoginInput = await c.req.json();
     const ipAddress = getClientIp(c);
     const userAgent = getUserAgent(c);
 
@@ -123,7 +129,7 @@ export async function loginWithPassword(c: Context) {
  * @returns { success: true, data: LoginResponse }
  */
 export async function register(c: Context) {
-    const body = c.req.valid('json');
+    const body: RegisterInput = await c.req.json();
     const ipAddress = getClientIp(c);
     const userAgent = getUserAgent(c);
 
@@ -150,7 +156,7 @@ export async function register(c: Context) {
  * 
  * @returns { success: true, message: string }
  */
-export async function logout(c: Context) {
+export function logout(c: Context) {
     // 如果使用 JWT，客户端直接删除 Token 即可
     // 如果需要服务端黑名单，可以在这里处理
 

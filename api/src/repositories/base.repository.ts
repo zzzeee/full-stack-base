@@ -343,8 +343,7 @@ export class BaseRepository {
             // 使用类型断言绕过 Supabase 的严格类型检查
             const { data: result, error } = await (this.client
                 .from(table)
-                // deno-lint-ignore no-explicit-any
-                .insert(data as any)
+                .insert(data)
                 .select()
                 .single());
 
@@ -387,8 +386,7 @@ export class BaseRepository {
             // 使用类型断言绕过 Supabase 的严格类型检查
             const { data, error } = await (this.client
                 .from(table)
-                // deno-lint-ignore no-explicit-any
-                .insert(rows as any)
+                .insert(rows)
                 .select());
 
             if (error) {

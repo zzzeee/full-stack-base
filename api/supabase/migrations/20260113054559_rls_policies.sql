@@ -6,9 +6,6 @@
 -- 启用 users 表的 RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
--- 启用 email_verification_codes 表的 RLS
-ALTER TABLE public.email_verification_codes ENABLE ROW LEVEL SECURITY;
-
 -- 启用 login_logs 表的 RLS
 ALTER TABLE public.login_logs ENABLE ROW LEVEL SECURITY;
 

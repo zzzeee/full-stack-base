@@ -3,7 +3,14 @@
  * 用户相关类型定义
  */
 
-import type { User } from './auth.types.ts';
+import type { Database } from './database.types.ts';
+
+/**
+ * 用户表类型
+ */
+export type User = Database['public']['Tables']['users']['Row'];
+export type UserInsert = Database['public']['Tables']['users']['Insert'];
+export type UserUpdate = Database['public']['Tables']['users']['Update'];
 
 /**
  * 用户公开资料（不包含敏感信息）

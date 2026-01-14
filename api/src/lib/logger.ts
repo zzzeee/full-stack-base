@@ -122,8 +122,8 @@ function formatData(data: LogData): string {
                 try {
                     const json = JSON.stringify(value);
                     // 如果太长，截断
-                    valueStr = json.length > 100
-                        ? `${json.substring(0, 100)}...`
+                    valueStr = json.length > 2000
+                        ? `${json.substring(0, 2000)}...`
                         : json;
                 } catch {
                     valueStr = '[Object]';

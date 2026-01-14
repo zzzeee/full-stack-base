@@ -20,7 +20,8 @@ const SALT_ROUNDS = parseInt(Deno.env.get('BCRYPT_ROUNDS') || '10');
  */
 export async function hashPassword(password: string): Promise<string> {
     try {
-        const hash = await bcrypt.hash(password, String(SALT_ROUNDS));
+        const salt = await bcrypt.genSalt(SALT_ROUNDS);
+        const hash = await bcrypt.hash(password, salt);
         logger.debug('Password hashed successfully');
         return hash;
     } catch (error) {

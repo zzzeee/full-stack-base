@@ -14,6 +14,7 @@
         "hono/factory": "jsr:@hono/hono@^4.11.3/factory",
         "hono/cors": "jsr:@hono/hono@^4.11.3/cors",
         "hono/logger": "jsr:@hono/hono@^4.11.3/logger",
+        "hono/pretty-json": "jsr:@hono/hono@^4.11.3/pretty-json",
         "@hono/zod-validator": "jsr:@hono/zod-validator@^0.7.6",
         "@std/crypto": "jsr:@std/crypto@^1.0.5",
         "@std/encoding": "jsr:@std/encoding@^1.0.10",

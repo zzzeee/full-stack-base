@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { VerificationPurpose } from '../types/auth.types.ts';
 
 /**
  * 发送验证码 Schema
@@ -16,14 +17,8 @@ export const sendVerificationCodeSchema = z.object({
         .max(255, '邮箱长度不能超过 255 个字符'),
 
     purpose: z
-        .enum([
-            'login',
-            'register',
-            'reset_password',
-            'change_email',
-            'verify_email',
-        ])
-        .default('login'),
+        .enum(VerificationPurpose)
+        .default(VerificationPurpose.LOGIN),
 });
 
 export type SendVerificationCodeInput = z.infer<typeof sendVerificationCodeSchema>;

@@ -156,6 +156,7 @@ export async function checkSupabaseHealth(): Promise<boolean> {
             .single() // 返回单行
 
         console.log('data:', data)
+        console.log('error:', error)
         return !error;
     } catch (err) {
         const error = toError(err);

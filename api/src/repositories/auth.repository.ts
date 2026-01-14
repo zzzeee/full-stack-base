@@ -24,7 +24,7 @@ export class AuthRepository extends BaseRepository {
      * @param data - 验证码数据
      * @returns Promise<VerificationCode> - 创建的验证码记录
      */
-    async createVerificationCode(
+    createVerificationCode(
         data: VerificationCodeInsert
     ): Promise<VerificationCode> {
         logger.info('Creating verification code', {
@@ -104,25 +104,29 @@ export class AuthRepository extends BaseRepository {
     }
 
     /**
-     * 获取最近发送的验证码时间
+     * 获取最近发送的验证码
      * @param email - 邮箱
      * @param purpose - 用途
      * @returns Promise<Date | null> - 最近发送时间或 null
      */
-    async getLastVerificationCodeTime(
+    async getLastVerification(
         email: string,
         purpose: string
-    ): Promise<Date | null> {
+    ): Promise<VerificationCode | null> {
         logger.debug('Getting last verification code time', { email, purpose });
 
         const result = await this.query<VerificationCode>(this.verificationTable, {
-            where: { email, purpose },
+            where: { 
+                email, 
+                purpose,
+                // is_used: false,
+                // expires_at: new Date().toISOString(),
+            },
             orderBy: { column: 'created_at', ascending: false },
             limit: 1,
         });
 
-        const lastCode = result.data[0];
-        return lastCode ? new Date(lastCode.created_at || '') : null;
+        return result.data.length ? result.data[0] : null;
     }
 
     // ==================== 登录日志相关 ====================
@@ -132,7 +136,7 @@ export class AuthRepository extends BaseRepository {
      * @param data - 登录日志数据
      * @returns Promise<LoginLog> - 创建的登录日志记录
      */
-    async createLoginLog(data: LoginLogInsert): Promise<LoginLog> {
+    createLoginLog(data: LoginLogInsert): Promise<LoginLog> {
         logger.info('Creating login log', {
             email: data.email,
             status: data.status,
@@ -168,7 +172,7 @@ export class AuthRepository extends BaseRepository {
      * @param minutes - 时间范围（分钟）
      * @returns Promise<number> - 失败次数
      */
-    async getRecentFailedLoginCount(
+    getRecentFailedLoginCount(
         email: string,
         minutes = 60
     ): Promise<number> {

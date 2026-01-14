@@ -4,8 +4,8 @@
  * 处理登录、注册、验证码等核心业务逻辑
  */
 
-import { userRepository } from '@/repositories/user.repository.ts';
-import { authRepository } from '@/repositories/auth.repository.ts';
+import { userRepository } from '@repositories/user.repository.ts';
+import { authRepository } from '@repositories/auth.repository.ts';
 import { hashPassword, verifyPassword } from '@/lib/password.ts';
 import { generateToken } from '@/lib/jwt.ts';
 import { sendVerificationCodeEmail } from '@/lib/email.ts';
@@ -15,11 +15,12 @@ import {
     createAuthError,
 } from '@/lib/errors/app-error.ts';
 import { ErrorCodes } from '@/lib/errors/error-codes.ts';
-import type {
+import {
     LoginResponse,
     LoginMethod,
     VerificationPurpose,
 } from '@/types/auth.types.ts';
+import { UserInsert } from '@/types/user.types.ts';
 
 /**
  * 认证服务类
@@ -43,21 +44,21 @@ export class AuthService {
         email: string,
         purpose: string
     ): Promise<void> {
-        const lastSendTime = await authRepository.getLastVerificationCodeTime(
+        const lastCode = await authRepository.getLastVerification(
             email,
             purpose
         );
 
-        if (lastSendTime) {
+        if (lastCode) {
             const secondsSinceLastSend = Math.floor(
-                (Date.now() - lastSendTime.getTime()) / 1000
+                (Date.now() - (new Date(lastCode?.created_at || '')).getTime()) / 1000
             );
 
             // 60 秒内不能重复发送
-            if (secondsSinceLastSend < 60) {
+            if (secondsSinceLastSend < 10) {
                 throw new AppError(
                     ErrorCodes.VERIFICATION_CODE_TOO_FREQUENT,
-                    `请在 ${60 - secondsSinceLastSend} 秒后重试`
+                    `请在 ${10 - secondsSinceLastSend} 秒后重试`
                 );
             }
         }
@@ -120,23 +121,23 @@ export class AuthService {
      * @returns Promise<LoginResponse> - 登录响应
      */
     private async buildLoginResponse(
-        user: { id: string; email: string; name: string; avatar_url: string | null; status: string; email_verified: boolean }
+        user: UserInsert,
     ): Promise<LoginResponse> {
         // 生成 JWT Token
         const token = await generateToken({
-            sub: user.id,
+            sub: String(user.id),
             email: user.email,
             role: 'user', // 可以从 user.metadata 中读取
         });
 
         return {
             user: {
-                id: user.id,
+                id: String(user.id),
                 email: user.email,
                 name: user.name,
-                avatar_url: user.avatar_url,
-                status: user.status,
-                email_verified: user.email_verified,
+                avatar_url: user.avatar_url || null,
+                status: String(user.status),
+                email_verified: user.email_verified || false,
             },
             token,
         };
@@ -239,7 +240,7 @@ export class AuthService {
             if (!user) {
                 await this.recordLoginLog({
                     email,
-                    loginMethod: 'verification_code',
+                    loginMethod: LoginMethod.VERIFICATION_CODE,
                     status: 'failed',
                     failureReason: '用户不存在',
                     ipAddress,
@@ -253,7 +254,7 @@ export class AuthService {
                 await this.recordLoginLog({
                     userId: user.id,
                     email,
-                    loginMethod: 'verification_code',
+                    loginMethod: LoginMethod.VERIFICATION_CODE,
                     status: 'blocked',
                     failureReason: '账号已被禁用',
                     ipAddress,
@@ -273,7 +274,7 @@ export class AuthService {
                 await this.recordLoginLog({
                     userId: user.id,
                     email,
-                    loginMethod: 'verification_code',
+                    loginMethod: LoginMethod.VERIFICATION_CODE,
                     status: 'failed',
                     failureReason: '验证码错误或已过期',
                     ipAddress,
@@ -303,7 +304,7 @@ export class AuthService {
             await this.recordLoginLog({
                 userId: user.id,
                 email,
-                loginMethod: 'verification_code',
+                loginMethod: LoginMethod.VERIFICATION_CODE,
                 status: 'success',
                 ipAddress,
                 userAgent,
@@ -353,7 +354,7 @@ export class AuthService {
         if (!user) {
             await this.recordLoginLog({
                 email,
-                loginMethod: 'password',
+                loginMethod: LoginMethod.PASSWORD,
                 status: 'failed',
                 failureReason: '用户不存在',
                 ipAddress,
@@ -367,7 +368,7 @@ export class AuthService {
             await this.recordLoginLog({
                 userId: user.id,
                 email,
-                loginMethod: 'password',
+                loginMethod: LoginMethod.PASSWORD,
                 status: 'blocked',
                 failureReason: '账号已被禁用',
                 ipAddress,
@@ -381,7 +382,7 @@ export class AuthService {
             await this.recordLoginLog({
                 userId: user.id,
                 email,
-                loginMethod: 'password',
+                loginMethod: LoginMethod.PASSWORD,
                 status: 'failed',
                 failureReason: '未设置密码',
                 ipAddress,
@@ -399,7 +400,7 @@ export class AuthService {
             await this.recordLoginLog({
                 userId: user.id,
                 email,
-                loginMethod: 'password',
+                loginMethod: LoginMethod.PASSWORD,
                 status: 'failed',
                 failureReason: '密码错误',
                 ipAddress,
@@ -415,7 +416,7 @@ export class AuthService {
         await this.recordLoginLog({
             userId: user.id,
             email,
-            loginMethod: 'password',
+            loginMethod: LoginMethod.PASSWORD,
             status: 'success',
             ipAddress,
             userAgent,
@@ -488,7 +489,7 @@ export class AuthService {
         await this.recordLoginLog({
             userId: user.id,
             email,
-            loginMethod: 'password',
+            loginMethod: LoginMethod.PASSWORD,
             status: 'success',
             ipAddress,
             userAgent,

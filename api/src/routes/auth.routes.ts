@@ -5,7 +5,6 @@
  */
 
 import { Hono } from '@hono/hono';
-import type { Context } from '@hono/hono';
 import { zValidator } from '@hono/zod-validator';
 import * as authHandler from '@/handlers/auth.handler.ts';
 import {
@@ -28,12 +27,6 @@ auth.post(
     '/send-code',
     zValidator('json', sendVerificationCodeSchema),
     authHandler.sendVerificationCode
-    // async (c: Context) => {
-    //   const body = await c.req.json();  
-    //   return c.json({
-    //     message: `Hello! ${body.email}`,
-    //   })
-    // }
 );
 
 // 验证码登录
