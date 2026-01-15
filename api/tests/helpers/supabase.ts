@@ -23,7 +23,25 @@ const createSupabaseClient = () => {
     });
 }
 
-export const getLastVerification = async (email: string, purpose: string) => {
+export const getLastAnyEmailCode = async () => {
+    const supabaseClient = createSupabaseClient();
+    const { data, error } = await supabaseClient
+        .from('email_verification_codes')
+        .select('*')
+        .order('created_at', {
+            ascending: false, // 倒序
+        })
+        .limit(1)
+        .maybeSingle();
+
+    console.log('lastAnyEmailCode email: ', data?.email)
+    console.log('lastAnyEmailCode number: ', data?.code)
+    console.log('lastAnyEmailCode expires_at: ', data?.expires_at ? new Date(data.expires_at).toLocaleString('zh-CN') : '')
+    console.log('lastAnyEmailCode error: ', error)
+    return data?.code || '';
+}
+
+export const getEmailCode = async (email: string, purpose: string) => {
     const supabaseClient = createSupabaseClient();
     const { data, error } = await supabaseClient
         .from('email_verification_codes')
@@ -34,9 +52,9 @@ export const getLastVerification = async (email: string, purpose: string) => {
         .gt('expires_at', new Date().toISOString())  // 使用 ISO 字符串
         .maybeSingle();  // 如果没有找到返回 null 而不是错误
     
-    console.log('verification code email: ', data?.email)
-    console.log('verification code number: ', data?.code)
-    console.log('verification code expires_at: ', data?.expires_at ? new Date(data.expires_at).toLocaleString('zh-CN') : '')
-    console.log('getLastVerification error: ', error)
+    console.log('getEmailCode email: ', data?.email)
+    console.log('getEmailCode number: ', data?.code)
+    console.log('getEmailCode expires_at: ', data?.expires_at ? new Date(data.expires_at).toLocaleString('zh-CN') : '')
+    console.log('getEmailCode error: ', error)
     return data?.code || '';
 }

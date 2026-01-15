@@ -5,6 +5,7 @@
  */
 
 import { logger } from '@/lib/logger.ts';
+import { User } from "@/types/user.types.ts";
 
 // 设置测试环境变量
 Deno.env.set('ENVIRONMENT', 'test');
@@ -19,6 +20,7 @@ export const TEST_CONFIG = {
 // 全局变量类型
 declare global {
     var TOKEN: string;
+    var USER: User;
 }
 
 /**

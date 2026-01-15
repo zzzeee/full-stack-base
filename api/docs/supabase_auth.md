@@ -163,6 +163,15 @@ supabase.auth.verifyOtp({
 - Supabase 在回调页完成验证
 - 行为等同于 verifyOtp
 
+```ts
+supabase.auth.signInWithOtp({
+  email,
+  options: {
+    emailRedirectTo: 'https://yourapp.com/callback'
+  }
+})
+```
+
 ---
 
 ## 七、signUp（邮箱 + 密码）
