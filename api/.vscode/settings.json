@@ -1,9 +1,8 @@
 {
     "deno.enable": true,
     "deno.lint": true,
-    "deno.testing.args": [
-        "--allow-all",
-        "--env-file=.env"
-    ],
-    "editor.formatOnSave": false
-}  
+    "editor.formatOnSave": false,
+    "deno.codeLens.test": true,
+    "deno.codeLens.testArgs": ["--allow-all", "--env-file=.env"],
+    "deno.envFile": ".env"
+}

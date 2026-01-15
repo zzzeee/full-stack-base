@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import config from "@config/index.ts";
+import config, { validateConfig } from "@config/index.ts";
 
 const createSupabaseClient = () => {
-    console.log(config.supabase.url, config.supabase.anonKey)
+    validateConfig()
     return createClient(config.supabase.url, config.supabase.anonKey, {
         auth: {
             persistSession: false,
@@ -34,7 +34,9 @@ export const getLastVerification = async (email: string, purpose: string) => {
         .gt('expires_at', new Date().toISOString())  // 使用 ISO 字符串
         .maybeSingle();  // 如果没有找到返回 null 而不是错误
     
-    console.log('getLastVerification data: ', data)
+    console.log('verification code email: ', data?.email)
+    console.log('verification code number: ', data?.code)
+    console.log('verification code expires_at: ', data?.expires_at ? new Date(data.expires_at).toLocaleString('zh-CN') : '')
     console.log('getLastVerification error: ', error)
     return data?.code || '';
-} 
+}

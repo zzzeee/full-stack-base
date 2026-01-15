@@ -6,9 +6,10 @@
 
 export const appConfig = {
     // 从环境变量读取
-    name: Deno.env.get('APP_NAME') || 'My API Project',
+    name: Deno.env.get('APP_NAME') || 'My Project',
     version: Deno.env.get('APP_VERSION') || '1.0.0',
     port: parseInt(Deno.env.get('PORT') || '8000'),
+    timezone: Deno.env.get('TIMEZONE') || undefined,
 
     // 环境相关
     environment: Deno.env.get('ENVIRONMENT') || 'development',
