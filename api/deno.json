@@ -9,6 +9,7 @@
         "@schemas/": "./src/schemas/",
         "@middlewares/": "./src/middlewares/",
         "@lib/": "./src/lib/",
+        "@untils/": "./src/untils/",
         "@types/": "./src/types/",
         "@hono/hono": "jsr:@hono/hono@^4.11.3",
         "hono/factory": "jsr:@hono/hono@^4.11.3/factory",

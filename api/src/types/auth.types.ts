@@ -4,6 +4,7 @@
  */
 
 import type { Database } from './database.types.ts';
+import type { User } from '@supabase/supabase-js';
 
 
 /**
@@ -53,16 +54,12 @@ export enum UserStatus {
  * 登录响应
  */
 export interface LoginResponse {
-    user: {
-        id: string;
-        email: string;
-        name: string;
-        avatar_url: string | null;
-        status: string;
-        email_verified: boolean;
-    };
-    token: string;
-    refresh_token?: string;
+    user: User;
+    session: {
+        token: string;
+        refresh_token?: string;
+        expires_at?: string;
+    },
 }
 
 /**
@@ -83,4 +80,40 @@ export interface AuthUser {
     id: string;
     email: string;
     role?: string;
+}
+
+/**
+ * 限流类型
+ */
+export type RateLimitType = 'email' | 'ip' | 'fingerprint';
+
+/**
+ * 限流记录
+ */
+export interface RateLimitRecord {
+    id: string;
+    limit_key: string;
+    limit_type: RateLimitType;
+    request_count: number;
+    window_start: string;
+    expires_at: string;
+    created_at: string;
+}
+
+/**
+ * 限流检查结果
+ */
+export interface RateLimitCheckResult {
+    allowed: boolean;
+    reason?: string;
+    retryAfter?: number;
+}
+
+/**
+ * 设备指纹数据
+ */
+export interface DeviceFingerprint {
+    ip: string;
+    userAgent: string;
+    deviceId?: string;
 }

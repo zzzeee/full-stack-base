@@ -7,7 +7,7 @@
 import type { Context } from '@hono/hono';
 import { userService } from '@/services/user.service.ts';
 import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '@/lib/errors/api-response.ts';
+import { apiResponse } from '@lib/api-response.ts';
 import { ChangePasswordInput, UpdateAvatarInput, UpdateProfileInput } from '@schemas/user.schema.ts';
 
 /**

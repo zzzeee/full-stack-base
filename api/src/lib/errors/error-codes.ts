@@ -5,71 +5,106 @@
 
 import { ContentfulStatusCode } from '@hono/hono/utils/http-status';
 
-export const ErrorCodes = {
-    // 通用错误 00-XXXX
-    INTERNAL_ERROR: '00-0001',
-    VALIDATION_ERROR: '00-0002',
-    NOT_FOUND: '00-0003',
+interface ErrorInfo {
+    code: string;
+    message: string;
+    status: ContentfulStatusCode;
+}
 
-    // 认证错误 10-XXXX
-    AUTH_INVALID_CREDENTIALS: '10-0001',
-    AUTH_TOKEN_EXPIRED: '10-0002',
-    AUTH_TOKEN_INVALID: '10-0003',
-    AUTH_UNAUTHORIZED: '10-0004',
-    AUTH_ACCOUNT_DISABLED: '10-0005',
-    AUTH_ACCOUNT_LOCKED: '10-0006',
-    AUTH_PASSWORD_NOT_SET: '10-0007',
-    AUTH_INVALID_OLD_PASSWORD: '10-0008',
-
-    // 用户错误 20-XXXX
-    USER_NOT_FOUND: '20-0001',
-    USER_ALREADY_EXISTS: '20-0002',
-    USER_EMAIL_ALREADY_EXISTS: '20-0003',
-
-    // 验证码错误 30-XXXX
-    VERIFICATION_CODE_INVALID: '30-0001',
-    VERIFICATION_CODE_EXPIRED: '30-0002',
-    VERIFICATION_CODE_TOO_FREQUENT: '30-0003',
-    VERIFICATION_CODE_MAX_ATTEMPTS: '30-0004',
-
-    // 邮件错误 40-XXXX
-    EMAIL_SEND_FAILED: '40-0001',
-} as const;
-
-export const ErrorStatusMap: Record<string, ContentfulStatusCode> = {
-    [ErrorCodes.INTERNAL_ERROR]: 500,
-    [ErrorCodes.VALIDATION_ERROR]: 400,
-    [ErrorCodes.NOT_FOUND]: 404,
-
-    [ErrorCodes.AUTH_INVALID_CREDENTIALS]: 401,
-    [ErrorCodes.AUTH_TOKEN_EXPIRED]: 401,
-    [ErrorCodes.AUTH_TOKEN_INVALID]: 401,
-    [ErrorCodes.AUTH_UNAUTHORIZED]: 401,
-    [ErrorCodes.AUTH_ACCOUNT_DISABLED]: 403,
-    [ErrorCodes.AUTH_ACCOUNT_LOCKED]: 423,
-    [ErrorCodes.AUTH_PASSWORD_NOT_SET]: 400,
-    [ErrorCodes.AUTH_INVALID_OLD_PASSWORD]: 400,
-
-    [ErrorCodes.USER_NOT_FOUND]: 404,
-    [ErrorCodes.USER_ALREADY_EXISTS]: 409,
-    [ErrorCodes.USER_EMAIL_ALREADY_EXISTS]: 409,
-
-    [ErrorCodes.VERIFICATION_CODE_INVALID]: 400,
-    [ErrorCodes.VERIFICATION_CODE_EXPIRED]: 400,
-    [ErrorCodes.VERIFICATION_CODE_TOO_FREQUENT]: 429,
-    [ErrorCodes.VERIFICATION_CODE_MAX_ATTEMPTS]: 429,
-
-    [ErrorCodes.EMAIL_SEND_FAILED]: 500,
-};
-
-export const ErrorMessages: Record<string, string> = {
-    [ErrorCodes.AUTH_INVALID_CREDENTIALS]: '邮箱或密码错误',
-    [ErrorCodes.AUTH_TOKEN_EXPIRED]: '登录已过期，请重新登录',
-    [ErrorCodes.AUTH_TOKEN_INVALID]: 'Token 无效',
-    [ErrorCodes.AUTH_UNAUTHORIZED]: '未授权访问',
-    [ErrorCodes.AUTH_ACCOUNT_DISABLED]: '账号已被禁用',
-    [ErrorCodes.AUTH_ACCOUNT_LOCKED]: '账号已被锁定',
-    [ErrorCodes.USER_EMAIL_ALREADY_EXISTS]: '该邮箱已被注册',
-    [ErrorCodes.VERIFICATION_CODE_INVALID]: '验证码错误或已过期',
-    [ErrorCodes.VERIFICATION_CODE_TOO_FREQUENT]: '发送过于频繁，请稍后再试',
+export const ErrorInfos: Record<string, ErrorInfo> = {
+    INTERNAL_ERROR: {
+        code: '00-0001',
+        message: '内部错误',
+        status: 500,
+    },
+    VALIDATION_ERROR: {
+        code: '00-0002',
+        message: '数据验证失败',
+        status: 400,
+    },
+    NOT_FOUND: {
+        code: '00-0003',
+        message: '资源不存在',
+        status: 404,
+    },
+    AUTH_INVALID_CREDENTIALS: {
+        code: '10-0001',
+        message: '邮箱或密码错误',
+        status: 401,
+    },
+    AUTH_TOKEN_EXPIRED: {
+        code: '10-0002',
+        message: '登录已过期，请重新登录',
+        status: 401,
+    },
+    AUTH_TOKEN_INVALID: {
+        code: '10-0003',
+        message: 'Token 无效',
+        status: 401,
+    },
+    AUTH_UNAUTHORIZED: {
+        code: '10-0004',
+        message: '未授权访问',
+        status: 401,
+    },
+    AUTH_ACCOUNT_DISABLED: {
+        code: '10-0005',
+        message: '账号已被禁用',
+        status: 403,
+    },
+    AUTH_ACCOUNT_LOCKED: {
+        code: '10-0006',
+        message: '账号已被锁定',
+        status: 423,
+    },
+    AUTH_PASSWORD_NOT_SET: {
+        code: '10-0007',
+        message: '密码未设置',
+        status: 400,
+    },
+    AUTH_INVALID_OLD_PASSWORD: {
+        code: '10-0008',
+        message: '旧密码错误',
+        status: 400,
+    },
+    USER_NOT_FOUND: {
+        code: '20-0001',
+        message: '用户不存在',
+        status: 404,
+    },
+    USER_ALREADY_EXISTS: {
+        code: '20-0002',
+        message: '用户已存在',
+        status: 409,
+    },
+    USER_EMAIL_ALREADY_EXISTS: {
+        code: '20-0003',
+        message: '邮箱已存在',
+        status: 409,
+    },
+    VERIFICATION_CODE_INVALID: {
+        code: '30-0001',
+        message: '验证码错误或已过期',
+        status: 400,
+    },
+    VERIFICATION_CODE_EXPIRED: {
+        code: '30-0002',
+        message: '验证码已过期',
+        status: 400,
+    },
+    VERIFICATION_CODE_TOO_FREQUENT: {
+        code: '30-0003',
+        message: '发送过于频繁，请稍后再试',
+        status: 429,
+    },
+    VERIFICATION_CODE_MAX_ATTEMPTS: {
+        code: '30-0004',
+        message: '验证码重试次数过多，请稍后再试',
+        status: 429,
+    },
+    EMAIL_SEND_FAILED: {
+        code: '40-0001',
+        message: '验证码发失败',
+        status: 500,
+    },
 };

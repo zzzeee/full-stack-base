@@ -3,7 +3,7 @@
 import { Context, Hono } from '@hono/hono';
 import { AppError } from './app-error.ts';
 import { logger } from '@/lib/logger.ts';
-import { apiResponse } from './api-response.ts';
+import { apiResponse } from '../api-response.ts';
 import { ContentfulStatusCode } from "@hono/hono/utils/http-status";
 
 /**

@@ -1,6 +1,6 @@
 // src/core/errors/app-error.ts
 
-import { ErrorCodes, ErrorStatusMap, ErrorMessages } from './error-codes.ts';
+import { ErrorInfos } from './error-codes.ts';
 
 /**
  * 应用错误基类
@@ -18,10 +18,10 @@ export class AppError extends Error {
         details?: unknown,
         isOperational = true
     ) {
-        super(message || ErrorMessages[code] || 'An error occurred');
+        super(message || ErrorInfos[code]?.message || 'An error occurred');
 
         this.code = code;
-        this.statusCode = ErrorStatusMap[code] || 500;
+        this.statusCode = ErrorInfos[code]?.status || 500;
         this.isOperational = isOperational;
         this.details = details;
 
@@ -44,14 +44,14 @@ export class AuthError extends AppError {
 
 export class ValidationError extends AppError {
     constructor(details: unknown, message = '数据验证失败') {
-        super(ErrorCodes.VALIDATION_ERROR, message, details);
+        super(ErrorInfos.VALIDATION_ERROR.code, message, details);
         this.name = 'ValidationError';
     }
 }
 
 export class NotFoundError extends AppError {
     constructor(resource: string) {
-        super(ErrorCodes.NOT_FOUND, `${resource} 不存在`);
+        super(ErrorInfos.NOT_FOUND.code, `${resource} 不存在`);
         this.name = 'NotFoundError';
     }
 }
@@ -60,22 +60,22 @@ export class NotFoundError extends AppError {
 
 export const createAuthError = {
     invalidCredentials: () =>
-        new AuthError(ErrorCodes.AUTH_INVALID_CREDENTIALS),
+        new AuthError(ErrorInfos.AUTH_INVALID_CREDENTIALS.code),
 
     tokenExpired: () =>
-        new AuthError(ErrorCodes.AUTH_TOKEN_EXPIRED),
+        new AuthError(ErrorInfos.AUTH_TOKEN_EXPIRED.code),
 
     tokenInvalid: () =>
-        new AuthError(ErrorCodes.AUTH_TOKEN_INVALID),
+        new AuthError(ErrorInfos.AUTH_TOKEN_INVALID.code),
 
     unauthorized: (message?: string) =>
-        new AuthError(ErrorCodes.AUTH_UNAUTHORIZED, message),
+        new AuthError(ErrorInfos.AUTH_UNAUTHORIZED.code, message),
 };
 
 export const createUserError = {
     notFound: (userId: string) =>
-        new AppError(ErrorCodes.USER_NOT_FOUND, undefined, { userId }),
+        new AppError(ErrorInfos.USER_NOT_FOUND.code, undefined, { userId }),
 
     emailTaken: (email: string) =>
-        new AppError(ErrorCodes.USER_EMAIL_ALREADY_EXISTS, undefined, { email }),
+        new AppError(ErrorInfos.USER_EMAIL_ALREADY_EXISTS.code, undefined, { email }),
 };

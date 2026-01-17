@@ -6,7 +6,7 @@
     - [ ] debug使用supabase自带的模拟邮件发送（而不是在控制台输出）
     - [√] 测试模块优化 (内容+输出)
 - [ ] 2026/1/15
-    - [ ] 发送邮件验证码的 注册/登录 
+    - [√] 发送邮件验证码的 注册/登录 
         - 发送验证码 supabase.auth.signInWithOtp
         - 验证验证码 supabase.auth.verifyOtp
     - [ ] 发送链接邮件的 注册/登录
