@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>Design System Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    /* =======================
+       Design Tokens
+       ======================= */
+    :root {
+      --color-primary: 220 90% 56%;
+      --color-primary-hover: 220 90% 50%;
+      --color-secondary: 260 80% 60%;
+      --color-accent: 160 70% 45%;
+
+      --color-bg: 0 0% 100%;
+      --color-bg-muted: 210 40% 96%;
+      --color-surface: 0 0% 98%;
+
+      --color-text: 222 47% 11%;
+      --color-text-muted: 215 16% 47%;
+      --color-border: 214 32% 91%;
+
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Helvetica, Arial, "Apple Color Emoji";
+    }
+
+    /* =======================
+       Dark Theme
+       ======================= */
+    [data-theme="dark"] {
+      --color-bg: 222 47% 11%;
+      --color-bg-muted: 223 47% 15%;
+      --color-surface: 224 47% 18%;
+
+      --color-text: 210 40% 98%;
+      --color-text-muted: 215 20% 65%;
+      --color-border: 216 34% 25%;
+    }
+
+    /* =======================
+       Base Styles
+       ======================= */
+    * {
+      box-sizing: border-box;
+      border-color: hsl(var(--color-border));
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: hsl(var(--color-bg));
+      color: hsl(var(--color-text));
+      line-height: 1.6;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: var(--space-3);
+    }
+
+    p {
+      color: hsl(var(--color-text-muted));
+    }
+
+    /* =======================
+       Layout
+       ======================= */
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: var(--space-8);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-8);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-6);
+    }
+
+    /* =======================
+       Components
+       ======================= */
+    .card {
+      background: hsl(var(--color-surface));
+      border: 1px solid;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all .15s ease;
+    }
+
+    .btn-primary {
+      background: hsl(var(--color-primary));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: hsl(var(--color-primary-hover));
+    }
+
+    .btn-secondary {
+      background: hsl(var(--color-bg-muted));
+      color: hsl(var(--color-text));
+    }
+
+    .btn-secondary:hover {
+      background: hsl(var(--color-border));
+    }
+
+    .input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid;
+      background: transparent;
+      color: inherit;
+      outline: none;
+    }
+
+    .input:focus {
+      border-color: hsl(var(--color-primary));
+    }
+
+    .list {
+      padding-left: 16px;
+      color: hsl(var(--color-text-muted));
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 999px;
+      background: hsl(var(--color-accent));
+      color: white;
+    }
+
+    /* =======================
+       Footer
+       ======================= */
+    footer {
+      margin-top: var(--space-12);
+      text-align: center;
+      font-size: 14px;
+      color: hsl(var(--color-text-muted));
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Design System Preview</h1>
+      <button class="btn btn-secondary" onclick="toggleTheme()">🌗 切换主题</button>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Buttons</h2>
+        <button class="btn btn-primary">Primary Action</button>
+        <button class="btn btn-secondary" style="margin-left:8px;">Secondary</button>
+      </div>
+
+      <div class="card">
+        <h2>Form</h2>
+        <input class="input" placeholder="Email address" />
+        <br /><br />
+        <button class="btn btn-primary">Submit</button>
+      </div>
+
+      <div class="card">
+        <h2>Content</h2>
+        <span class="badge">NEW</span>
+        <ul class="list">
+          <li>统一设计语言</li>
+          <li>支持暗色模式</li>
+          <li>适合前后台系统</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      Minimal · Modern · Scalable Design System
+    </footer>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement
+      html.dataset.theme = html.dataset.theme === "dark" ? "light" : "dark"
+    }
+  </script>
+</body>
+</html>
