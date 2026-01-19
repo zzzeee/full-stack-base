@@ -175,14 +175,14 @@ export function LoginForm() {
 
     return (
         <Card className="border-none shadow-2xl">
-            <CardHeader className="space-y-1 pb-4">
+            <CardHeader className="space-y-1 p-8 pb-0">
                 <CardTitle className="text-2xl font-bold">欢迎回来</CardTitle>
                 <CardDescription>
                     使用{mode === "password" ? "密码" : "验证码"}登录您的账户
                 </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-8">
                 {/* 错误提示 */}
                 {error && (
                     <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-start gap-2">
@@ -212,8 +212,8 @@ export function LoginForm() {
                                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     id="email"
-                                    type="email"
-                                    placeholder="your@email.com"
+                                    type="text"
+                                    // placeholder="your@email.com"
                                     className="pl-10"
                                     error={!!passwordForm.formState.errors.email}
                                     {...passwordForm.register("email")}
@@ -235,7 +235,7 @@ export function LoginForm() {
                                 <Input
                                     id="password"
                                     type="password"
-                                    placeholder="••••••••"
+                                    // placeholder="••••••••"
                                     className="pl-10"
                                     error={!!passwordForm.formState.errors.password}
                                     {...passwordForm.register("password")}
@@ -266,8 +266,8 @@ export function LoginForm() {
                                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     id="email-code"
-                                    type="email"
-                                    placeholder="your@email.com"
+                                    type="text"
+                                    // placeholder="your@email.com"
                                     className="pl-10"
                                     error={!!codeForm.formState.errors.email}
                                     {...codeForm.register("email")}
@@ -290,7 +290,7 @@ export function LoginForm() {
                                     <Input
                                         id="code"
                                         type="text"
-                                        placeholder="请输入6位验证码"
+                                        // placeholder="请输入6位验证码"
                                         maxLength={6}
                                         className="pl-10"
                                         error={!!codeForm.formState.errors.code}
