@@ -7,7 +7,7 @@
 import type { Context } from '@hono/hono';
 import { logger } from '@/lib/logger.ts';
 import { apiResponse } from '@lib/api-response.ts';
-import { ErrorInfos } from '@lib/errors/error-codes.ts';
+import { ErrorInfos, ErrorCodes } from '@lib/errors/error-codes.ts';
 import { 
     SendVerificationCodeInput,
     VerificationCodeLoginInput,
@@ -31,7 +31,7 @@ export async function sendVerificationCode(c: Context) {
     });
     
     if(error) {
-        const errorInfo = ErrorInfos.EMAIL_SEND_FAILED;
+        const errorInfo = ErrorInfos[ErrorCodes.EMAIL_SEND_FAILED];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
@@ -61,7 +61,7 @@ export async function loginWithVerificationCode(c: Context) {
     });
     
     if(error) {
-        const errorInfo = ErrorInfos.VERIFICATION_CODE_INVALID;
+        const errorInfo = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
@@ -97,7 +97,7 @@ export async function loginWithPassword(c: Context) {
     });
     
     if(error) {
-        const errorInfo = ErrorInfos.AUTH_INVALID_CREDENTIALS;
+        const errorInfo = ErrorInfos[ErrorCodes.AUTH_INVALID_CREDENTIALS];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
