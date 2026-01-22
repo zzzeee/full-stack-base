@@ -1,3 +1,3 @@
 export const env = {
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+    apiUrl: `${process.env.API_BASE_URL}${process.env.API_PREFIX}` || '/api',
 } as const

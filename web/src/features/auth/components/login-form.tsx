@@ -16,15 +16,17 @@ import {
     CardHeader,
     CardTitle
 } from "@/components/ui/card"
+import { authService } from "../services/auth.service"
+import { useAuthStore } from "../stores/auth.store"
 
 // 验证 Schema
 const passwordSchema = z.object({
-    email: z.string().email("请输入有效的邮箱地址"),
+    email: z.email("请输入有效的邮箱地址"),
     password: z.string().min(6, "密码至少6位字符"),
 })
 
 const codeSchema = z.object({
-    email: z.string().email("请输入有效的邮箱地址"),
+    email: z.email("请输入有效的邮箱地址"),
     code: z.string().length(6, "验证码必须是6位数字"),
 })
 
@@ -33,6 +35,8 @@ type CodeFormData = z.infer<typeof codeSchema>
 
 export function LoginForm() {
     const router = useRouter()
+    const login = useAuthStore((state) => state.login)
+
     const [mode, setMode] = useState<"password" | "code">("password")
     const [isLoading, setIsLoading] = useState(false)
     const [isSendingCode, setIsSendingCode] = useState(false)
@@ -58,23 +62,12 @@ export function LoginForm() {
         setError(null)
 
         try {
-            const response = await fetch("/api/auth/login/password", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            })
+            const response = await authService.loginWithPassword(data)
 
-            if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.message || "登录失败")
-            }
+            // 保存用户信息和 token 到 Zustand store
+            login(response.user, response.token)
 
-            const result = await response.json()
-            console.log("登录成功:", result)
-
-            // 这里应该保存 token 和用户信息
-            // useAuthStore.getState().login(result.user, result.token)
-
+            // 跳转到仪表板
             router.push("/dashboard")
         } catch (err) {
             setError(err instanceof Error ? err.message : "登录失败，请重试")
@@ -89,20 +82,12 @@ export function LoginForm() {
         setError(null)
 
         try {
-            const response = await fetch("/api/auth/login/code", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            })
+            const response = await authService.loginWithCode(data)
 
-            if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.message || "登录失败")
-            }
+            // 保存用户信息和 token 到 Zustand store
+            login(response.user, response.token)
 
-            const result = await response.json()
-            console.log("登录成功:", result)
-
+            // 跳转到仪表板
             router.push("/dashboard")
         } catch (err) {
             setError(err instanceof Error ? err.message : "登录失败，请重试")
@@ -121,9 +106,9 @@ export function LoginForm() {
         }
 
         // 验证邮箱格式
-        const emailValidation = z.string().email().safeParse(email)
+        const emailValidation = z.email().safeParse(email)
         if (!emailValidation.success) {
-            codeForm.setError("email", { message: "请输入有效的邮箱地址" })
+            codeForm.setError("email", { message: "请输入有效的邮箱地址!" })
             return
         }
 
@@ -131,16 +116,7 @@ export function LoginForm() {
         setError(null)
 
         try {
-            const response = await fetch("/api/auth/send-code", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
-            })
-
-            if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.message || "发送验证码失败")
-            }
+            await authService.sendVerificationCode(email)
 
             setCodeSent(true)
             setCountdown(60)
@@ -213,7 +189,6 @@ export function LoginForm() {
                                 <Input
                                     id="email"
                                     type="text"
-                                    // placeholder="your@email.com"
                                     className="pl-10"
                                     error={!!passwordForm.formState.errors.email}
                                     {...passwordForm.register("email")}
@@ -235,7 +210,6 @@ export function LoginForm() {
                                 <Input
                                     id="password"
                                     type="password"
-                                    // placeholder="••••••••"
                                     className="pl-10"
                                     error={!!passwordForm.formState.errors.password}
                                     {...passwordForm.register("password")}
@@ -267,7 +241,6 @@ export function LoginForm() {
                                 <Input
                                     id="email-code"
                                     type="text"
-                                    // placeholder="your@email.com"
                                     className="pl-10"
                                     error={!!codeForm.formState.errors.email}
                                     {...codeForm.register("email")}
@@ -290,7 +263,6 @@ export function LoginForm() {
                                     <Input
                                         id="code"
                                         type="text"
-                                        // placeholder="请输入6位验证码"
                                         maxLength={6}
                                         className="pl-10"
                                         error={!!codeForm.formState.errors.code}

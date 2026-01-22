@@ -11,7 +11,6 @@ import {
     sendVerificationCodeSchema,
     verificationCodeLoginSchema,
     passwordLoginSchema,
-    registerSchema,
 } from '@/schemas/auth.schema.ts';
 import { authMiddleware } from '@/middlewares/auth.middleware.ts';
 
@@ -43,14 +42,6 @@ auth.post(
     '/login/password',
     zValidator('json', passwordLoginSchema),
     authHandler.loginWithPassword
-);
-
-// 用户注册
-// POST /api/auth/register
-auth.post(
-    '/register',
-    zValidator('json', registerSchema),
-    authHandler.register
 );
 
 /**
