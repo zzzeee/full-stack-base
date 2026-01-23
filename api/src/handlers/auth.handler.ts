@@ -69,7 +69,11 @@ export async function loginWithVerificationCode(c: Context) {
     }else {
         return c.json(
             apiResponse.success({
-                user: data.user,
+                user: {
+                    id: data.user?.id,
+                    email: data.user?.email,
+                    role: data.user?.role,
+                },
                 session: {
                     token: data.session?.access_token,
                     refresh_token: data.session?.refresh_token,
@@ -105,7 +109,11 @@ export async function loginWithPassword(c: Context) {
     }else {
         return c.json(
             apiResponse.success({
-                user: data.user,
+                user: {
+                    id: data.user?.id,
+                    email: data.user?.email,
+                    role: data.user?.role,
+                },
                 session: {
                     token: data.session?.access_token,
                     refresh_token: data.session?.refresh_token,

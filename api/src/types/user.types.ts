@@ -21,16 +21,16 @@ export type UserProfile = Omit<User, 'password_hash' | 'metadata'>;
  * 用户更新数据
  */
 export interface UserUpdateData {
-  name?: string;
-  avatar_url?: string;
-  bio?: string;
-  phone?: string;
+    name?: string;
+    avatar_url?: string;
+    bio?: string;
+    phone?: string;
 }
 
 /**
  * 修改密码数据
  */
 export interface ChangePasswordData {
-  old_password: string;
-  new_password: string;
+    old_password: string;
+    new_password: string;
 }

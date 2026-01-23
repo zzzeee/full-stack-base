@@ -67,8 +67,8 @@ export function LoginForm() {
             // 保存用户信息和 token 到 Zustand store
             login(response.user, response.token)
 
-            // 跳转到仪表板
-            router.push("/dashboard")
+            // 跳转到主页
+            router.push("/")
         } catch (err) {
             setError(err instanceof Error ? err.message : "登录失败，请重试")
         } finally {
@@ -87,8 +87,8 @@ export function LoginForm() {
             // 保存用户信息和 token 到 Zustand store
             login(response.user, response.token)
 
-            // 跳转到仪表板
-            router.push("/dashboard")
+            // 跳转到主页
+            router.push("/")
         } catch (err) {
             setError(err instanceof Error ? err.message : "登录失败，请重试")
         } finally {
@@ -150,7 +150,7 @@ export function LoginForm() {
     }
 
     return (
-        <Card className="border-none shadow-2xl">
+        <Card className="border-none shadow-2xl w-[90%] max-w-md">
             <CardHeader className="space-y-1 p-8 pb-0">
                 <CardTitle className="text-2xl font-bold">欢迎回来</CardTitle>
                 <CardDescription>
@@ -222,10 +222,12 @@ export function LoginForm() {
                             )}
                         </div>
 
-                        <Button type="submit" className="w-full" isLoading={isLoading}>
-                            {isLoading ? "登录中..." : "登录"}
-                            {!isLoading && <ArrowRight className="h-4 w-4" />}
-                        </Button>
+                        <div className="pt-4">
+                            <Button type="submit" className="w-full" isLoading={isLoading}>
+                                {isLoading ? "登录中..." : "登录"}
+                                {!isLoading && <ArrowRight className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </form>
                 )}
 

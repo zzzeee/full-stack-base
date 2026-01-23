@@ -4,7 +4,6 @@
  */
 
 import type { Database } from './database.types.ts';
-import type { User } from '@supabase/supabase-js';
 
 
 /**
@@ -54,7 +53,7 @@ export enum UserStatus {
  * 登录响应
  */
 export interface LoginResponse {
-    user: User;
+    user: AuthUser;
     session: {
         token: string;
         refresh_token?: string;

@@ -2,5 +2,9 @@
 import { LoginForm } from '@/features/auth/components/login-form'
 
 export default function LoginPage() {
-    return <LoginForm />
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center">
+            <LoginForm />
+        </div>
+    )
 }
