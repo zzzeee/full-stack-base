@@ -11,26 +11,10 @@ apps/web/
 │  │  ├─ (auth)/                     # 路由组：认证相关页面
 │  │  │  ├─ login/
 │  │  │  │  └─ page.tsx
-│  │  │  ├─ register/
-│  │  │  │  └─ page.tsx
 │  │  │  └─ layout.tsx               # 认证页面专用布局
-│  │  │
-│  │  ├─ (main)/                     # 路由组：主应用页面
-│  │  │  ├─ dashboard/
-│  │  │  │  └─ page.tsx
-│  │  │  ├─ products/
-│  │  │  │  ├─ page.tsx              # /products
-│  │  │  │  └─ [id]/
-│  │  │  │     ├─ page.tsx           # /products/:id
-│  │  │  │     └─ loading.tsx        # 加载状态
-│  │  │  └─ layout.tsx               # 主应用布局（带导航）
 │  │  │
 │  │  ├─ about/
 │  │  │  └─ page.tsx
-│  │  │
-│  │  ├─ api/                        # API Routes（如需要）
-│  │  │  └─ health/
-│  │  │     └─ route.ts
 │  │  │
 │  │  ├─ layout.tsx                  # 全局根布局
 │  │  ├─ page.tsx                    # 首页
@@ -60,36 +44,14 @@ apps/web/
 │  ├─ features/                      # 功能模块（Feature-Sliced Design）
 │  │  ├─ auth/
 │  │  │  ├─ components/              # 模块专用组件
-│  │  │  │  ├─ login-form.tsx
-│  │  │  │  ├─ register-form.tsx
-│  │  │  │  └─ social-login.tsx
-│  │  │  ├─ hooks/                   # 模块专用 hooks
-│  │  │  │  ├─ use-auth.ts
-│  │  │  │  └─ use-login.ts
-│  │  │  ├─ services/                # 业务逻辑 & API 调用
+│  │  │  │  └─ login-form.tsx
+│  │  │  ├─ services/                # 业务逻辑 & API调用 & hook
 │  │  │  │  └─ auth.service.ts
 │  │  │  ├─ stores/                  # 状态管理（Zustand/Jotai）
 │  │  │  │  └─ auth.store.ts
 │  │  │  ├─ types/                   # 模块类型定义
 │  │  │  │  └─ auth.types.ts
 │  │  │  └─ index.ts                 # 统一导出
-│  │  │
-│  │  ├─ products/
-│  │  │  ├─ components/
-│  │  │  │  ├─ product-list.tsx
-│  │  │  │  ├─ product-card.tsx
-│  │  │  │  ├─ product-detail.tsx
-│  │  │  │  └─ product-filters.tsx
-│  │  │  ├─ hooks/
-│  │  │  │  ├─ use-products.ts
-│  │  │  │  └─ use-product-detail.ts
-│  │  │  ├─ services/
-│  │  │  │  └─ products.service.ts
-│  │  │  ├─ stores/
-│  │  │  │  └─ products.store.ts
-│  │  │  ├─ types/
-│  │  │  │  └─ product.types.ts
-│  │  │  └─ index.ts
 │  │  │
 │  │  └─ users/
 │  │     ├─ components/
@@ -157,14 +119,9 @@ apps/web/
 │  └─ favicon.ico
 │
 ├─ tests/                            # 测试文件
-│  ├─ unit/
-│  ├─ integration/
-│  └─ e2e/
 │
+├─ .env                              # 环境变量
 ├─ .env.local                        # 环境变量（本地）
-├─ .env.example                      # 环境变量示例
-├─ .eslintrc.json                    # ESLint 配置
-├─ .prettierrc                       # Prettier 配置
 ├─ next.config.js                    # Next.js 配置
 ├─ tailwind.config.ts                # Tailwind 配置
 ├─ tsconfig.json                     # TypeScript 配置
@@ -197,8 +154,7 @@ apps/web/
 ```text
 features/auth/
 ├─ components/    # 组件
-├─ hooks/         # Hooks
-├─ services/      # API & 业务逻辑
+├─ services/      # API & 业务逻辑 && Hooks
 ├─ stores/        # 状态管理
 ├─ types/         # 类型定义
 └─ index.ts       # 统一导出

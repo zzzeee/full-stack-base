@@ -32,6 +32,9 @@
             ],
             "@/utils/*": [
                 "./src/lib/utils/*"
+            ],
+            "@tests/*": [
+                "./tests/*"
             ]
         }
     },
@@ -42,6 +45,6 @@
         "**/*.mts",
         ".next/types/**/*.ts",
         ".next/dev/types/**/*.ts"
-    ],
-    "exclude": ["node_modules"]
+, "_vitest.config.mjs", "tests/debug.test.ts.rm"    ],
+    "exclude": ["node_modules", "*.rm"]
 }

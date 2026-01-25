@@ -1,5 +1,12 @@
 import { env } from '@/lib/constants/env'
 import type { ApiResponse, RequestConfig } from './types'
+import {
+    InterceptorManager,
+    createDefaultRequestInterceptors,
+    createDefaultResponseInterceptors,
+    createDefaultErrorInterceptors,
+    createTokenRefreshInterceptor,
+} from './interceptors'
 
 /**
  * API 客户端错误类
@@ -38,6 +45,7 @@ export class ApiClientError extends Error {
  * - 失败自动重试
  * - 统一错误处理
  * - 文件上传
+ * - 请求/响应拦截器
  */
 class ApiClient {
     /** API 基础 URL */
@@ -51,8 +59,44 @@ class ApiClient {
         'Content-Type': 'application/json',
     }
 
+    /** 拦截器管理器 */
+    public interceptors: InterceptorManager
+
     constructor(baseURL: string) {
         this.baseURL = baseURL
+        this.interceptors = new InterceptorManager()
+
+        // 初始化默认拦截器
+        this.setupDefaultInterceptors()
+    }
+
+    /**
+     * 设置默认拦截器
+     * @private
+     */
+    private setupDefaultInterceptors() {
+        // 添加默认请求拦截器
+        const requestInterceptors = createDefaultRequestInterceptors()
+        requestInterceptors.forEach((interceptor) => {
+            this.interceptors.addRequestInterceptor(interceptor)
+        })
+
+        // 添加默认响应拦截器
+        const responseInterceptors = createDefaultResponseInterceptors()
+        responseInterceptors.forEach((interceptor) => {
+            this.interceptors.addResponseInterceptor(interceptor)
+        })
+
+        // 添加默认错误拦截器
+        const errorInterceptors = createDefaultErrorInterceptors()
+        errorInterceptors.forEach((interceptor) => {
+            this.interceptors.addErrorInterceptor(interceptor)
+        })
+
+        // 添加 Token 刷新拦截器
+        this.interceptors.addErrorInterceptor(
+            createTokenRefreshInterceptor('/auth/refresh')
+        )
     }
 
     /**
@@ -182,7 +226,7 @@ class ApiClient {
     }
 
     /**
-     * 执行请求（带超时和重试机制）
+     * 执行请求（带超时、重试和拦截器）
      * 
      * @param url - 请求 URL
      * @param config - 请求配置
@@ -202,6 +246,7 @@ class ApiClient {
             timeout = this.defaultTimeout,
             retry = 0,
             retryDelay = 1000,
+            noCache,
             ...fetchConfig
         } = config
 
@@ -210,17 +255,32 @@ class ApiClient {
         // 重试逻辑
         for (let attempt = 0; attempt <= retry; attempt++) {
             try {
+                // 执行请求拦截器
+                const { url: interceptedUrl, config: interceptedConfig } =
+                    await this.interceptors.runRequestInterceptors(url, {
+                        ...fetchConfig,
+                        noCache,
+                    })
+
                 // 创建 AbortController 用于超时控制
                 const controller = new AbortController()
                 const timeoutId = setTimeout(() => controller.abort(), timeout)
 
-                const response = await fetch(url, {
-                    ...fetchConfig,
+                // 从 interceptedConfig 中移除自定义属性，只保留标准 RequestInit 属性
+                const { noCache: _, ...standardConfig } = interceptedConfig
+
+                const response = await fetch(interceptedUrl, {
+                    ...standardConfig,
                     signal: controller.signal,
                 })
 
                 clearTimeout(timeoutId)
-                return await this.handleResponse<T>(response)
+
+                // 执行响应拦截器
+                const interceptedResponse =
+                    await this.interceptors.runResponseInterceptors(response)
+
+                return await this.handleResponse<T>(interceptedResponse)
             } catch (error) {
                 lastError = error as Error
 
@@ -232,6 +292,13 @@ class ApiClient {
                         undefined,
                         { timeout }
                     )
+                }
+
+                // 执行错误拦截器
+                try {
+                    await this.interceptors.runErrorInterceptors(lastError)
+                } catch (interceptedError) {
+                    lastError = interceptedError as Error
                 }
 
                 // 最后一次重试也失败了
@@ -469,6 +536,12 @@ class ApiClient {
  * 
  * // 使用示例
  * const response = await apiClient.get<User[]>('/users')
+ * 
+ * // 添加自定义拦截器
+ * apiClient.interceptors.addRequestInterceptor((url, config) => {
+ *   console.log('Custom interceptor:', url)
+ *   return { url, config }
+ * })
  * ```
  */
 export const apiClient = new ApiClient(env.apiUrl)

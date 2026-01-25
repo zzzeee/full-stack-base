@@ -1,0 +1,84 @@
+// tests/debug.test.ts
+import { describe, it, expect, beforeEach } from 'vitest'
+import { vi } from 'vitest'
+import { apiClient } from '@/tests/lib/api/client'
+import { printOutput } from '@/tests/helpers/debug.ts'
+
+describe('验证 process.stdout.write', () => {
+    beforeEach(() => {
+        printOutput('🔵 beforeEach - 每个测试前执行')
+    })
+
+    it('测试1: 正常日志', () => {
+        printOutput("🟢 测试1开始")
+        const data = { name: 'test', value: 42 }
+        printOutput(`数据: ${JSON.stringify(data)}`)
+        console.table([{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }])
+        expect(true).toBe(true)
+        printOutput('🟢 测试1结束')
+    })
+
+    it('测试2: 失败时看日志', async () => {
+        printOutput('🟡 测试2开始 - 模拟异步')
+
+        // 模拟异步操作
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        printOutput('🟡 异步操作完成')
+        printOutput('这是一个警告')
+        printOutput('这是一个错误（但不是测试失败）')
+
+        expect(2 + 2).toBe(4)
+    })
+
+    it('测试3: 故意失败查看完整输出', () => {
+        printOutput('🔴 测试3开始 - 这个会失败')
+        printOutput('失败前的日志应该能看到')
+
+        // 注释掉下面这行让测试通过，取消注释让测试失败
+        // expect(true).toBe(false)
+
+        printOutput('这行在期望失败后不会执行')
+    })
+
+    it('调试：查看 apiClient.get 的行为', async () => {
+        // 1. 模拟一个永远不会完成的 fetch
+        global.fetch = vi.fn().mockReturnValue(new Promise(() => {
+            // 空的 executor，永远不会调用 resolve/reject
+        }))
+    
+        // 2. 调用并观察
+        printOutput('=== 开始测试 ===')
+        const startTime = Date.now()
+    
+        const apiPromise = apiClient.get('/users', { timeout: 100 })
+        
+        printOutput('立即状态:', {
+            isPromise: apiPromise instanceof Promise,
+        })
+    
+        // 3. 监听状态变化
+        const resultPromise = apiPromise
+            .then(result => {
+                const elapsed = Date.now() - startTime
+                printOutput(`✅ ${elapsed}ms 后成功:`, result)
+                return { type: 'success', result }
+            })
+            .catch(error => {
+                const elapsed = Date.now() - startTime
+                printOutput(`❌ ${elapsed}ms 后失败:`, {
+                    message: error.message,
+                    constructor: error.constructor.name,
+                })
+                return { type: 'error', error }
+            })
+    
+        // 4. 等待结果（给足够时间，但不超过测试超时）
+        const result = await Promise.race([
+            resultPromise,
+            new Promise(resolve => setTimeout(() => resolve({ type: 'timeout' }), 500))
+        ])
+        
+        printOutput('最终结果:', result)
+    }, 10000) // ⭐ 重要：给测试设置更长的超时时间
+})
