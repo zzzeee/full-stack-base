@@ -1,21 +1,33 @@
-// src/lib/email.ts
 /**
- * 邮件发送工具
- * 支持 SMTP 和第三方邮件服务
+ * @file email.ts
+ * @description 邮件发送工具模块，支持 SMTP 和第三方邮件服务
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { logger } from './logger.ts';
 
 /**
- * 邮件配置
+ * 邮件配置对象
+ * 
+ * @constant
+ * @description 包含发件人邮箱和名称，从环境变量读取
  */
 const EMAIL_CONFIG = {
+    /** 发件人邮箱地址，从 MAIL_FROM_EMAIL 环境变量读取，默认为 'noreply@example.com' */
     from: Deno.env.get('MAIL_FROM_EMAIL') || 'noreply@example.com',
+    /** 发件人名称，从 MAIL_FROM_NAME 环境变量读取，默认为 'My API Project' */
     fromName: Deno.env.get('MAIL_FROM_NAME') || 'My API Project',
 };
 
 /**
- * 邮件发送选项
+ * 邮件发送选项接口
+ * 
+ * @interface
+ * @property {string} to - 收件人邮箱地址
+ * @property {string} subject - 邮件主题
+ * @property {string} [text] - 纯文本邮件内容（可选）
+ * @property {string} [html] - HTML 格式邮件内容（可选）
  */
 interface SendEmailOptions {
     to: string;
@@ -26,11 +38,20 @@ interface SendEmailOptions {
 
 /**
  * 发送邮件
- * @param options - 邮件选项
- * @returns Promise<boolean> - 是否发送成功
  * 
- * 注意：这里使用模拟发送，实际项目中应该集成真实的邮件服务
+ * @param {SendEmailOptions} options - 邮件发送选项
+ * @returns {Promise<boolean>} 是否发送成功
+ * 
+ * @description
+ * 注意：当前实现为模拟发送，实际项目中应该集成真实的邮件服务
  * 推荐服务：SendGrid, AWS SES, Resend, Mailgun
+ * 
+ * @example
+ * await sendEmail({
+ *   to: 'user@example.com',
+ *   subject: '欢迎注册',
+ *   html: '<h1>欢迎</h1><p>感谢您的注册</p>'
+ * });
  */
 export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
     try {
@@ -85,10 +106,14 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
 
 /**
  * 发送验证码邮件
- * @param email - 收件人邮箱
- * @param code - 验证码
- * @param purpose - 验证码用途
- * @returns Promise<boolean> - 是否发送成功
+ * 
+ * @param {string} email - 收件人邮箱地址
+ * @param {string} code - 验证码
+ * @param {string} purpose - 验证码用途（login, register, reset_password, change_email, verify_email）
+ * @returns {Promise<boolean>} 是否发送成功
+ * 
+ * @example
+ * await sendVerificationCodeEmail('user@example.com', '123456', 'login');
  */
 export async function sendVerificationCodeEmail(
     email: string,

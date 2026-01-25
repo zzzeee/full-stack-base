@@ -1,7 +1,8 @@
-// src/routes/auth.routes.ts
 /**
- * 认证路由
- * 定义认证相关的路由和中间件
+ * @file auth.routes.ts
+ * @description 认证路由模块，定义认证相关的路由和中间件
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { Hono } from '@hono/hono';
@@ -14,6 +15,11 @@ import {
 } from '@/schemas/auth.schema.ts';
 import { authMiddleware } from '@/middlewares/auth.middleware.ts';
 
+/**
+ * 认证路由实例
+ * 
+ * @constant
+ */
 const auth = new Hono();
 
 /**

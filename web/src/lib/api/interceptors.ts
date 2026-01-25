@@ -1,4 +1,5 @@
 import type { RequestConfig } from './types'
+import { toast } from 'sonner'
 
 /**
  * 请求拦截器类型
@@ -234,6 +235,9 @@ export const createDefaultErrorInterceptors = () => {
             // 清除认证信息
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('auth-storage')
+                
+                // 显示错误提示
+                toast.error('登录已过期，请重新登录')
 
                 // 重定向到登录页
                 const currentPath = window.location.pathname
@@ -248,6 +252,7 @@ export const createDefaultErrorInterceptors = () => {
     interceptors.push((error) => {
         if (error?.status === 403) {
             console.error('Permission denied:', error)
+            toast.error('权限不足，无法执行此操作')
             // 可以选择显示提示或跳转到无权限页面
             if (typeof window !== 'undefined') {
                 // window.location.href = '/403'
@@ -260,7 +265,7 @@ export const createDefaultErrorInterceptors = () => {
     interceptors.push((error) => {
         if (error?.status >= 500) {
             console.error('Server error:', error)
-            // 可以选择显示全局错误提示
+            toast.error('服务器错误，请稍后重试')
         }
         throw error
     })
@@ -269,7 +274,7 @@ export const createDefaultErrorInterceptors = () => {
     interceptors.push((error) => {
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
             console.error('Network error - please check your connection')
-            // 可以选择显示网络错误提示
+            toast.error('网络连接失败，请检查网络设置')
         }
         throw error
     })

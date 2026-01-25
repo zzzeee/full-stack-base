@@ -1,7 +1,8 @@
-// src/repositories/base.repository.ts
 /**
- * 通用数据访问层基类
- * 提供 CRUD 操作的通用实现
+ * @file base.repository.ts
+ * @description 通用数据访问层基类，提供 CRUD 操作的通用实现
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { supabase, supabaseAdmin } from '@/lib/supabase.client.ts';
@@ -12,7 +13,10 @@ import type { Database } from '@/types/database.types.ts';
 // ==================== 类型定义 ====================
 
 /**
- * 查询操作符
+ * 查询操作符类型
+ * 
+ * @typedef {string} WhereOperator
+ * @description 支持的查询操作符
  */
 type WhereOperator =
     | 'eq'      // 等于 =
@@ -28,7 +32,10 @@ type WhereOperator =
     | 'not';    // IS NOT NULL
 
 /**
- * Where 条件定义
+ * Where 条件定义类型
+ * 
+ * @typedef {Object} WhereCondition
+ * @description 支持多种查询条件的类型定义
  */
 type WhereCondition =
     | { op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'; value: unknown }
@@ -38,12 +45,20 @@ type WhereCondition =
     | { op: 'not'; value: null };
 
 /**
- * Where 选项（支持简写）
+ * Where 选项类型（支持简写）
+ * 
+ * @typedef {Record<string, WhereCondition | string | number | boolean | null>} WhereOptions
+ * @description 支持简写形式（直接值表示等于）和完整形式（包含操作符）
  */
 type WhereOptions = Record<string, WhereCondition | string | number | boolean | null>;
 
 /**
- * 排序选项
+ * 排序选项接口
+ * 
+ * @interface
+ * @property {string} column - 排序列名
+ * @property {boolean} [ascending=true] - 是否升序，默认 true
+ * @property {boolean} [nullsFirst] - null 值是否排在前面
  */
 interface OrderByOption {
     column: string;
@@ -52,7 +67,13 @@ interface OrderByOption {
 }
 
 /**
- * 分页选项
+ * 分页选项接口
+ * 
+ * @interface
+ * @property {number} [page] - 页码（从 1 开始）
+ * @property {number} [pageSize] - 每页数量
+ * @property {number} [limit] - 或直接指定 limit
+ * @property {number} [offset] - 或直接指定 offset
  */
 interface PaginationOptions {
     page?: number;      // 页码（从 1 开始）
@@ -62,7 +83,14 @@ interface PaginationOptions {
 }
 
 /**
- * 查询选项
+ * 查询选项接口
+ * 
+ * @interface
+ * @extends {PaginationOptions}
+ * @property {string} [select='*'] - 选择字段，默认为 '*'
+ * @property {WhereOptions} [where] - 查询条件
+ * @property {OrderByOption | OrderByOption[]} [orderBy] - 排序选项
+ * @property {boolean} [count=false] - 是否返回总数
  */
 interface QueryOptions extends PaginationOptions {
     select?: string;
@@ -72,7 +100,15 @@ interface QueryOptions extends PaginationOptions {
 }
 
 /**
- * 查询结果（带分页信息）
+ * 查询结果接口（带分页信息）
+ * 
+ * @interface
+ * @template T - 结果数据类型
+ * @property {T[]} data - 查询结果数据
+ * @property {number} [total] - 总记录数（当 count 为 true 时）
+ * @property {number} [page] - 当前页码
+ * @property {number} [pageSize] - 每页数量
+ * @property {number} [totalPages] - 总页数
  */
 interface QueryResult<T> {
     data: T[];
@@ -84,10 +120,23 @@ interface QueryResult<T> {
 
 // ==================== 基础仓储类 ====================
 
+/**
+ * 基础仓储类
+ * 
+ * @class
+ * @description 提供通用的数据库 CRUD 操作方法，支持查询、插入、更新、删除等操作
+ */
 export class BaseRepository {
+    /** Supabase 客户端实例 */
     protected client: SupabaseClient<Database>;
+    /** 是否使用管理员客户端（绕过 RLS） */
     protected useAdmin: boolean;
 
+    /**
+     * 创建基础仓储实例
+     * 
+     * @param {boolean} [useAdmin=false] - 是否使用管理员客户端
+     */
     constructor(useAdmin = false) {
         this.client = useAdmin ? supabaseAdmin : supabase;
         this.useAdmin = useAdmin;
@@ -97,6 +146,13 @@ export class BaseRepository {
 
     /**
      * 应用 where 条件
+     * 
+     * @private
+     * @param {any} query - Supabase 查询对象
+     * @param {WhereOptions} [where] - 查询条件
+     * @returns {any} 应用条件后的查询对象
+     * 
+     * @description 支持简写形式（直接值）和完整形式（包含操作符）的查询条件
      */
     private applyWhere(
         // deno-lint-ignore no-explicit-any
@@ -163,6 +219,11 @@ export class BaseRepository {
 
     /**
      * 应用排序
+     * 
+     * @private
+     * @param {any} query - Supabase 查询对象
+     * @param {OrderByOption | OrderByOption[]} [orderBy] - 排序选项
+     * @returns {any} 应用排序后的查询对象
      */
     private applyOrderBy(
         // deno-lint-ignore no-explicit-any
@@ -186,6 +247,13 @@ export class BaseRepository {
 
     /**
      * 应用分页
+     * 
+     * @private
+     * @param {any} query - Supabase 查询对象
+     * @param {PaginationOptions} options - 分页选项
+     * @returns {any} 应用分页后的查询对象
+     * 
+     * @description 优先使用 page + pageSize，其次使用 limit + offset
      */
     private applyPagination(
         // deno-lint-ignore no-explicit-any
@@ -214,6 +282,15 @@ export class BaseRepository {
 
     /**
      * 查询单条记录
+     * 
+     * @template T - 返回数据类型
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {WhereOptions} where - 查询条件
+     * @param {string} [select='*'] - 选择字段，默认为 '*'
+     * @returns {Promise<T | null>} 查询结果或 null
+     * 
+     * @throws {Error} 当数据库查询失败时抛出错误
+     * 
      * @example
      * const user = await repo.findOne('users', { email: 'test@example.com' });
      */
@@ -265,6 +342,14 @@ export class BaseRepository {
 
     /**
      * 查询多条记录
+     * 
+     * @template T - 返回数据类型
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {QueryOptions} [options={}] - 查询选项
+     * @returns {Promise<QueryResult<T>>} 查询结果（包含数据和分页信息）
+     * 
+     * @throws {Error} 当数据库查询失败时抛出错误
+     * 
      * @example
      * const users = await repo.query('users', {
      *   where: { status: 'active' },
@@ -331,6 +416,14 @@ export class BaseRepository {
 
     /**
      * 插入单条记录
+     * 
+     * @template T - 返回数据类型
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {any} data - 插入数据
+     * @returns {Promise<T>} 插入后的记录
+     * 
+     * @throws {Error} 当数据库插入失败时抛出错误
+     * 
      * @example
      * const user = await repo.insert('users', { email: 'test@example.com', name: 'Test' });
      */
@@ -369,6 +462,14 @@ export class BaseRepository {
 
     /**
      * 批量插入
+     * 
+     * @template T - 返回数据类型
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {any[]} rows - 插入数据数组
+     * @returns {Promise<T[]>} 插入后的记录数组
+     * 
+     * @throws {Error} 当数据库插入失败时抛出错误
+     * 
      * @example
      * const users = await repo.insertMany('users', [
      *   { email: 'user1@example.com', name: 'User 1' },
@@ -412,6 +513,15 @@ export class BaseRepository {
 
     /**
      * 更新记录
+     * 
+     * @template T - 返回数据类型
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {WhereOptions} where - 更新条件
+     * @param {any} updates - 更新数据
+     * @returns {Promise<T>} 更新后的记录
+     * 
+     * @throws {Error} 当数据库更新失败时抛出错误
+     * 
      * @example
      * const user = await repo.update('users', { id: '123' }, { name: 'New Name' });
      */
@@ -452,6 +562,14 @@ export class BaseRepository {
 
     /**
      * 批量更新（返回更新的记录）
+     * 
+     * @template T - 返回数据类型
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {WhereOptions} where - 更新条件
+     * @param {any} updates - 更新数据
+     * @returns {Promise<T[]>} 更新后的记录数组
+     * 
+     * @throws {Error} 当数据库更新失败时抛出错误
      */
     async updateMany<T>(
         table: keyof Database['public']['Tables'],
@@ -490,6 +608,13 @@ export class BaseRepository {
 
     /**
      * 删除记录
+     * 
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {WhereOptions} where - 删除条件
+     * @returns {Promise<boolean>} 是否删除成功
+     * 
+     * @throws {Error} 当数据库删除失败时抛出错误
+     * 
      * @example
      * await repo.delete('users', { id: '123' });
      */
@@ -523,6 +648,13 @@ export class BaseRepository {
 
     /**
      * 统计记录数
+     * 
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {WhereOptions} [where] - 查询条件（可选）
+     * @returns {Promise<number>} 记录数
+     * 
+     * @throws {Error} 当数据库查询失败时抛出错误
+     * 
      * @example
      * const count = await repo.count('users', { status: 'active' });
      */
@@ -559,6 +691,11 @@ export class BaseRepository {
 
     /**
      * 检查记录是否存在
+     * 
+     * @param {keyof Database['public']['Tables']} table - 表名
+     * @param {WhereOptions} where - 查询条件
+     * @returns {Promise<boolean>} 是否存在
+     * 
      * @example
      * const exists = await repo.exists('users', { email: 'test@example.com' });
      */
@@ -572,16 +709,25 @@ export class BaseRepository {
 
 /**
  * 默认仓储实例（使用 Anon Key）
+ * 
+ * @constant
+ * @description 使用匿名密钥的仓储实例，遵守 RLS 策略
  */
 export const repository = new BaseRepository();
 
 /**
  * 管理员仓储实例（使用 Service Role Key）
+ * 
+ * @constant
+ * @description 使用服务角色密钥的仓储实例，绕过所有 RLS 策略
  */
 export const adminRepository = new BaseRepository(true);
 
 /**
  * 便捷方法导出
+ * 
+ * @constant
+ * @description 提供便捷的数据库操作方法，使用默认仓储实例
  */
 export const db = {
     // 查询
@@ -605,6 +751,9 @@ export const db = {
 
 /**
  * 管理员操作（绕过 RLS）
+ * 
+ * @constant
+ * @description 提供管理员级别的数据库操作方法，绕过所有 RLS 策略
  */
 export const adminDb = {
     query: adminRepository.query.bind(adminRepository),

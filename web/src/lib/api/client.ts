@@ -7,6 +7,7 @@ import {
     createDefaultErrorInterceptors,
     createTokenRefreshInterceptor,
 } from './interceptors'
+import { toast } from 'sonner'
 
 /**
  * API 客户端错误类
@@ -299,6 +300,14 @@ class ApiClient {
                     await this.interceptors.runErrorInterceptors(lastError)
                 } catch (interceptedError) {
                     lastError = interceptedError as Error
+                }
+                
+                // 如果是 ApiClientError，显示 toast 提示（错误拦截器可能已经处理了某些情况）
+                if (lastError instanceof ApiClientError && lastError.status !== 401 && lastError.status !== 403) {
+                    // 401 和 403 已经在错误拦截器中处理了 toast
+                    if (lastError.status !== 500 && lastError.status !== undefined && lastError.status < 500) {
+                        toast.error(lastError.message || '请求失败')
+                    }
                 }
 
                 // 最后一次重试也失败了

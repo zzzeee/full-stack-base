@@ -1,7 +1,8 @@
-// src/app.ts
 /**
- * Hono 应用主文件
- * 注册路由、中间件和错误处理
+ * @file app.ts
+ * @description Hono 应用主文件，注册路由、中间件和错误处理
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { Context, Hono } from '@hono/hono';
@@ -18,20 +19,31 @@ import { registerErrorHandler } from '@lib/errors/error-handler.ts';
 import { logger } from './lib/logger.ts';
 import { checkSupabaseHealth } from './lib/supabase.client.ts';
 
-// 创建 Hono 应用实例
+/**
+ * Hono 应用实例
+ * 
+ * @constant
+ * @description 主应用实例，包含所有路由、中间件和错误处理
+ */
 const app = new Hono();
 
 // ==================== 全局中间件 ====================
 
-// 请求日志
+// 请求日志中间件
 app.use('*', honoLogger());
 
-// CORS 配置
+/**
+ * CORS 允许的来源列表
+ * 
+ * @constant
+ * @description 从环境变量 CORS_ORIGINS 读取，默认为本地开发地址
+ */
 const allowedOrigins = Deno.env.get('CORS_ORIGINS')?.split(',') || [
     'http://localhost:3000',
     'http://localhost:5173',
 ];
 
+// CORS 配置中间件
 app.use('*', cors({
     origin: allowedOrigins,
     credentials: true,
@@ -40,7 +52,7 @@ app.use('*', cors({
     maxAge: 86400, // 24 hours
 }));
 
-// 美化 JSON 输出（开发环境）
+// 美化 JSON 输出（仅开发环境）
 if (Deno.env.get('ENVIRONMENT') === 'development') {
     app.use('*', prettyJSON());
 }
@@ -62,7 +74,13 @@ app.get('/health', async (c: Context) => {
 
 // ==================== API 路由 ====================
 
-// 根路径
+/**
+ * 根路径端点
+ * 
+ * @route GET /
+ * @description 返回 API 基本信息
+ * @returns {Object} API 名称、版本和文档地址
+ */
 app.get('/', (c: Context) => {
     return c.json({
         name: 'My API Project',
@@ -71,14 +89,19 @@ app.get('/', (c: Context) => {
     });
 });
 
-// 认证路由（公开）
+// 认证路由（公开访问，无需认证）
 app.route('/api/auth', authRoutes);
 
-// 用户路由（需要认证）
+// 用户路由（需要认证，由路由内部中间件处理）
 app.route('/api/users', userRoutes);
 
 // ==================== 404 处理 ====================
 
+/**
+ * 404 未找到路由处理
+ * 
+ * @description 当请求的路由不存在时触发，记录警告日志并返回 404 响应
+ */
 app.notFound((c: Context) => {
     logger.warn('Route not found', {
         method: c.req.method,

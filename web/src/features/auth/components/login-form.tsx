@@ -1,3 +1,10 @@
+/**
+ * @file login-form.tsx
+ * @description 登录表单组件，支持密码登录和验证码登录两种方式
+ * @author System
+ * @createDate 2024-01-01
+ */
+
 "use client"
 
 import { useState } from "react"
@@ -6,6 +13,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Mail, Lock, KeyRound, ArrowRight } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,20 +27,47 @@ import {
 import { authService } from "../services/auth.service"
 import { useAuthStore } from "../stores/auth.store"
 
-// 验证 Schema
+/**
+ * 密码登录表单验证 Schema
+ * @constant
+ */
 const passwordSchema = z.object({
     email: z.email("请输入有效的邮箱地址"),
     password: z.string().min(6, "密码至少6位字符"),
 })
 
+/**
+ * 验证码登录表单验证 Schema
+ * @constant
+ */
 const codeSchema = z.object({
     email: z.email("请输入有效的邮箱地址"),
     code: z.string().length(6, "验证码必须是6位数字"),
 })
 
+/**
+ * 密码登录表单数据类型
+ * @typedef {Object} PasswordFormData
+ */
 type PasswordFormData = z.infer<typeof passwordSchema>
+
+/**
+ * 验证码登录表单数据类型
+ * @typedef {Object} CodeFormData
+ */
 type CodeFormData = z.infer<typeof codeSchema>
 
+/**
+ * 登录表单组件
+ *
+ * @component
+ * @description 提供密码登录和验证码登录两种登录方式，支持表单验证、错误处理和状态管理
+ *
+ * @returns {JSX.Element} 登录表单组件
+ *
+ * @example
+ * <LoginForm />
+ */
 export function LoginForm() {
     const router = useRouter()
     const login = useAuthStore((state) => state.login)
@@ -40,7 +75,6 @@ export function LoginForm() {
     const [mode, setMode] = useState<"password" | "code">("password")
     const [isLoading, setIsLoading] = useState(false)
     const [isSendingCode, setIsSendingCode] = useState(false)
-    const [error, setError] = useState<string | null>(null)
     const [codeSent, setCodeSent] = useState(false)
     const [countdown, setCountdown] = useState(0)
 
@@ -56,10 +90,14 @@ export function LoginForm() {
         defaultValues: { email: "", code: "" },
     })
 
-    // 密码登录处理
+    /**
+     * 处理密码登录
+     *
+     * @param {PasswordFormData} data - 登录表单数据
+     * @returns {Promise<void>}
+     */
     const handlePasswordLogin = async (data: PasswordFormData) => {
         setIsLoading(true)
-        setError(null)
 
         try {
             const response = await authService.loginWithPassword(data)
@@ -67,19 +105,26 @@ export function LoginForm() {
             // 保存用户信息和 token 到 Zustand store
             login(response.user, response.token)
 
+            toast.success("登录成功")
+
             // 跳转到主页
             router.push("/")
         } catch (err) {
-            setError(err instanceof Error ? err.message : "登录失败，请重试")
+            const errorMessage = err instanceof Error ? err.message : "登录失败，请重试"
+            toast.error(errorMessage)
         } finally {
             setIsLoading(false)
         }
     }
 
-    // 验证码登录处理
+    /**
+     * 处理验证码登录
+     *
+     * @param {CodeFormData} data - 验证码登录表单数据
+     * @returns {Promise<void>}
+     */
     const handleCodeLogin = async (data: CodeFormData) => {
         setIsLoading(true)
-        setError(null)
 
         try {
             const response = await authService.loginWithCode(data)
@@ -87,16 +132,24 @@ export function LoginForm() {
             // 保存用户信息和 token 到 Zustand store
             login(response.user, response.token)
 
+            toast.success("登录成功")
+
             // 跳转到主页
             router.push("/")
         } catch (err) {
-            setError(err instanceof Error ? err.message : "登录失败，请重试")
+            const errorMessage = err instanceof Error ? err.message : "登录失败，请重试"
+            toast.error(errorMessage)
         } finally {
             setIsLoading(false)
         }
     }
 
-    // 发送验证码
+    /**
+     * 发送验证码
+     *
+     * @description 验证邮箱格式后发送验证码，并启动60秒倒计时
+     * @returns {Promise<void>}
+     */
     const handleSendCode = async () => {
         const email = codeForm.getValues("email")
 
@@ -113,13 +166,14 @@ export function LoginForm() {
         }
 
         setIsSendingCode(true)
-        setError(null)
 
         try {
             await authService.sendVerificationCode(email)
 
             setCodeSent(true)
             setCountdown(60)
+            
+            toast.success('验证码已发送到您的邮箱')
 
             // 倒计时
             const timer = setInterval(() => {
@@ -133,16 +187,20 @@ export function LoginForm() {
                 })
             }, 1000)
         } catch (err) {
-            setError(err instanceof Error ? err.message : "发送验证码失败")
+            const errorMessage = err instanceof Error ? err.message : "发送验证码失败"
+            toast.error(errorMessage)
         } finally {
             setIsSendingCode(false)
         }
     }
 
-    // 切换登录模式
+    /**
+     * 切换登录模式
+     *
+     * @description 在密码登录和验证码登录之间切换，重置表单和状态
+     */
     const toggleMode = () => {
         setMode(mode === "password" ? "code" : "password")
-        setError(null)
         passwordForm.reset()
         codeForm.reset()
         setCodeSent(false)
@@ -159,24 +217,6 @@ export function LoginForm() {
             </CardHeader>
 
             <CardContent className="space-y-4 p-8">
-                {/* 错误提示 */}
-                {error && (
-                    <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-start gap-2">
-                        <svg
-                            className="h-5 w-5 flex-shrink-0"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                        <span>{error}</span>
-                    </div>
-                )}
-
                 {/* 密码登录表单 */}
                 {mode === "password" && (
                     <form onSubmit={passwordForm.handleSubmit(handlePasswordLogin)} className="space-y-4">

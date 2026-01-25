@@ -1,7 +1,8 @@
-// src/routes/user.routes.ts
 /**
- * 用户路由
- * 定义用户相关的路由
+ * @file user.routes.ts
+ * @description 用户路由模块，定义用户相关的路由和中间件
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { Hono } from '@hono/hono';
@@ -11,9 +12,16 @@ import {
     updateProfileSchema,
     updateAvatarSchema,
     changePasswordSchema,
+    sendEmailVerificationCodeSchema,
+    changeEmailSchema,
 } from '@/schemas/user.schema.ts';
 import { authMiddleware } from '@/middlewares/auth.middleware.ts';
 
+/**
+ * 用户路由实例
+ * 
+ * @constant
+ */
 const users = new Hono();
 
 /**
@@ -51,6 +59,22 @@ users.put(
     '/me/password',
     zValidator('json', changePasswordSchema),
     userHandler.changePassword
+);
+
+// 发送邮箱验证码（用于更换邮箱）
+// POST /api/users/me/email/send-code
+users.post(
+    '/me/email/send-code',
+    zValidator('json', sendEmailVerificationCodeSchema),
+    userHandler.sendEmailVerificationCode
+);
+
+// 确认更换邮箱
+// PUT /api/users/me/email
+users.put(
+    '/me/email',
+    zValidator('json', changeEmailSchema),
+    userHandler.changeEmail
 );
 
 /**

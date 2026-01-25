@@ -1,4 +1,10 @@
-// src/lib/supabase.client.ts
+/**
+ * @file supabase.client.ts
+ * @description Supabase 客户端模块，提供类型安全的数据库访问接口
+ * @author System
+ * @createDate 2026-01-25
+ */
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types.ts';
 import { config } from '@config/index.ts';
@@ -6,13 +12,20 @@ import { logger } from './logger.ts';
 import { toError } from "../untils/error.ts";
 
 /**
- * Supabase 客户端类型
- * 使用生成的 Database 类型提供完整的类型安全
+ * 类型安全的 Supabase 客户端类型
+ * 
+ * @typedef {SupabaseClient<Database>} TypedSupabaseClient
+ * @description 使用生成的 Database 类型提供完整的类型安全
  */
 export type TypedSupabaseClient = SupabaseClient<Database>;
 
 /**
- * Supabase 客户端配置选项
+ * Supabase 客户端配置选项接口
+ * 
+ * @interface
+ * @property {boolean} [useServiceRole=false] - 是否使用 Service Role Key（绕过 RLS）
+ * @property {boolean} [persistSession=false] - 是否持久化会话
+ * @property {boolean} [autoRefreshToken=false] - 是否自动刷新 token
  */
 interface SupabaseClientOptions {
     useServiceRole?: boolean; // 是否使用 Service Role Key（绕过 RLS）
@@ -22,8 +35,14 @@ interface SupabaseClientOptions {
 
 /**
  * 创建 Supabase 客户端实例
- * @param options - 客户端配置选项
- * @returns 类型安全的 Supabase 客户端
+ * 
+ * @param {SupabaseClientOptions} [options={}] - 客户端配置选项
+ * @returns {SupabaseClient<Database>} 类型安全的 Supabase 客户端
+ * 
+ * @throws {Error} 当必需的环境变量未配置时抛出错误
+ * 
+ * @example
+ * const client = createSupabaseClient({ useServiceRole: true });
  */
 function createSupabaseClient(
     options: SupabaseClientOptions = {}
@@ -170,6 +189,12 @@ export async function checkSupabaseHealth(): Promise<boolean> {
 
 /**
  * 获取当前 Supabase 客户端配置信息（用于调试）
+ * 
+ * @returns {Object} 包含 Supabase URL、环境、密钥状态等信息
+ * 
+ * @example
+ * const info = getSupabaseInfo();
+ * console.log(info.url); // Supabase URL
  */
 export function getSupabaseInfo() {
     return {

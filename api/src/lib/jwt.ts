@@ -1,7 +1,8 @@
-// src/lib/jwt.ts
 /**
- * JWT 工具
- * 用于生成和验证 JSON Web Token
+ * @file jwt.ts
+ * @description JWT 工具模块，用于生成和验证 JSON Web Token
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { create, verify, getNumericDate } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
@@ -10,9 +11,18 @@ import { logger } from './logger.ts';
 import type { JwtPayload } from '@/types/auth.types.ts';
 
 /**
- * JWT 配置
+ * JWT 密钥，从环境变量读取
+ * 
+ * @constant
+ * @description 用于签名和验证 JWT token 的密钥
  */
 const JWT_SECRET = Deno.env.get('JWT_SECRET');
+
+/**
+ * JWT 过期时间（秒），从环境变量读取，默认 7 天（604800 秒）
+ * 
+ * @constant
+ */
 const JWT_EXPIRES_IN = parseInt(Deno.env.get('JWT_EXPIRES_IN') || '604800'); // 7 天
 
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
@@ -20,7 +30,10 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 }
 
 /**
- * 加密密钥
+ * 加密密钥对象
+ * 
+ * @constant
+ * @description 使用 HMAC SHA-256 算法导入的密钥，用于签名和验证 JWT
  */
 const key = await crypto.subtle.importKey(
     'raw',
@@ -32,9 +45,19 @@ const key = await crypto.subtle.importKey(
 
 /**
  * 生成 JWT Token
- * @param payload - Token 载荷
- * @param expiresIn - 过期时间（秒），默认使用环境变量配置
- * @returns Promise<string> - JWT Token
+ * 
+ * @param {JwtPayload} payload - Token 载荷，包含用户信息
+ * @param {number} [expiresIn=JWT_EXPIRES_IN] - 过期时间（秒），默认使用环境变量配置
+ * @returns {Promise<string>} JWT Token 字符串
+ * 
+ * @throws {Error} 当 token 生成失败时抛出错误
+ * 
+ * @example
+ * const token = await generateToken({
+ *   sub: 'user123',
+ *   email: 'user@example.com',
+ *   role: 'user'
+ * });
  */
 export async function generateToken(
     payload: JwtPayload,
@@ -67,9 +90,19 @@ export async function generateToken(
 
 /**
  * 验证 JWT Token
- * @param token - JWT Token
- * @returns Promise<JwtPayload> - Token 载荷
- * @throws Error - Token 无效或过期
+ * 
+ * @param {string} token - JWT Token 字符串
+ * @returns {Promise<JwtPayload>} Token 载荷，包含用户信息
+ * 
+ * @throws {Error} 当 Token 无效或过期时抛出错误
+ * 
+ * @example
+ * try {
+ *   const payload = await verifyToken(token);
+ *   console.log(payload.email); // 用户邮箱
+ * } catch (error) {
+ *   console.error('Token 验证失败');
+ * }
  */
 export async function verifyToken(token: string): Promise<JwtPayload> {
     try {
@@ -96,8 +129,13 @@ export async function verifyToken(token: string): Promise<JwtPayload> {
 
 /**
  * 从请求头中提取 Token
- * @param authorizationHeader - Authorization 请求头
- * @returns string | null - Token 或 null
+ * 
+ * @param {string | null} authorizationHeader - Authorization 请求头，格式为 "Bearer <token>"
+ * @returns {string | null} 提取的 Token 字符串，如果格式不正确则返回 null
+ * 
+ * @example
+ * const token = extractTokenFromHeader('Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
+ * // 返回: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
  */
 export function extractTokenFromHeader(
     authorizationHeader: string | null

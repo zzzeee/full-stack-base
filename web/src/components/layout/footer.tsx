@@ -1,8 +1,22 @@
+/**
+ * @file footer.tsx
+ * @description 页脚组件，显示版权信息和相关链接
+ * @author System
+ * @createDate 2024-01-01
+ */
+
 import Link from "next/link"
 
 /**
  * 页脚组件
- * 显示版权信息和相关链接
+ *
+ * @component
+ * @description 显示版权信息、产品链接、公司信息、支持链接和法律信息
+ *
+ * @returns {JSX.Element} 页脚组件
+ *
+ * @example
+ * <Footer />
  */
 export function Footer() {
     const currentYear = new Date().getFullYear()

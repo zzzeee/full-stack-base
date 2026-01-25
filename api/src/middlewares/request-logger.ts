@@ -1,6 +1,28 @@
+/**
+ * @file request-logger.ts
+ * @description 请求日志中间件，记录 HTTP 请求和响应的详细信息
+ * @author System
+ * @createDate 2026-01-25
+ */
+
 import { Context, Next } from '@hono/hono'
 import { logger } from '../lib/logger.ts'
 
+/**
+ * 请求日志中间件
+ * 
+ * @param {Context} c - Hono 上下文对象
+ * @param {Next} next - 下一个中间件函数
+ * 
+ * @description
+ * 记录请求开始和完成的信息，包括：
+ * - 请求方法、路径、客户端 IP、User-Agent
+ * - 响应状态码和处理时长
+ * 客户端 IP 支持多种代理场景（X-Forwarded-For、CF-Connecting-IP 等）
+ * 
+ * @example
+ * app.use('*', requestLogger);
+ */
 export const requestLogger = async (c: Context, next: Next) => {
     const start = Date.now()
 

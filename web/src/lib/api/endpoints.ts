@@ -113,6 +113,24 @@ export const USER_ENDPOINTS = {
     /** 获取用户活动日志 */
     activities: (id: string, params?: { page?: number; limit?: number }) =>
         `/users/${id}/activities${buildQueryParams(params)}`,
+
+    /** 获取当前用户资料 */
+    me: () => '/users/me',
+
+    /** 更新当前用户资料 */
+    updateMe: () => '/users/me',
+
+    /** 更新当前用户头像 */
+    updateMyAvatar: () => '/users/me/avatar',
+
+    /** 修改当前用户密码 */
+    changeMyPassword: () => '/users/me/password',
+
+    /** 发送邮箱验证码（用于更换邮箱） */
+    sendEmailCode: () => '/users/me/email/send-code',
+
+    /** 确认更换邮箱 */
+    changeEmail: () => '/users/me/email',
 } as const
 
 /**

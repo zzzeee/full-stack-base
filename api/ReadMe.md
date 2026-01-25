@@ -6,15 +6,9 @@
 my-api-project/                              # 项目根目录
 │
 ├── 📂 supabase/                             # Supabase 配置目录（不可更改）
-│   ├── 📂 functions/                        # Edge Functions 目录
+│   └── 📂 functions/                        # Edge Functions 目录
 │   │   └── 📂 api/                          # 主 API 函数（函数名对应 URL 路径）
 │   │       └── index.ts                     # Supabase 部署入口：https://[project].supabase.co/functions/v1/api
-│   │
-│   ├── 📂 migrations/                       # 数据库迁移文件
-│   │   └── 20240101000000_init.sql          # 初始化表结构
-│   │
-│   ├── seed.sql                             # 数据库种子数据
-│   └── config.toml                          # Supabase 项目配置
 │
 ├── 📂 src/                                  # 核心业务源代码
 │   │
@@ -61,7 +55,6 @@ my-api-project/                              # 项目根目录
 │   │
 │   ├── 📂 types/                            # TypeScript 类型定义
 │   │   ├── user.types.ts                    # 用户相关类型
-│   │   ├── product.types.ts                 # 产品相关类型
 │   │   ├── api.types.ts                     # API 通用类型：响应、分页
 │   │   └── hono.types.ts                    # Hono 扩展类型：Context Variables
 │   │
@@ -98,20 +91,11 @@ my-api-project/                              # 项目根目录
 ├── import_map.json                          # 依赖别名映射（可选，简化导入路径）
 ├── deno.lock                                # 依赖锁定文件（确保版本一致性）
 │
-├── .env.example                             # 环境变量示例文件（不含真实密钥）
+├── .env                                     # 环境变量（不含真实密钥）
 ├── .env.local                               # 本地开发环境变量（Git 忽略）
 ├── .env.production                          # 生产环境变量（Git 忽略）
 │
-├── .gitignore                               # Git 忽略文件配置
-├── .editorconfig                            # 编辑器配置（代码风格统一）
-│
-├── README.md                                # 项目说明文档
-│                                            # - 项目介绍
-│                                            # - 快速开始
-│                                            # - 技术栈
-│                                            # - 目录结构说明
-│
-└── LICENSE                                  # 开源协议（可选）
+└── README.md                                # 项目说明文档
 ```
 
 

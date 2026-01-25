@@ -1,3 +1,10 @@
+/**
+ * @file header.tsx
+ * @description 头部导航栏组件，显示品牌 Logo、导航菜单和用户状态（登录/未登录）
+ * @author System
+ * @createDate 2024-01-01
+ */
+
 "use client"
 
 import { useState, useRef, useEffect } from "react"
@@ -9,7 +16,14 @@ import { useAuthStore } from "@/features/auth/stores/auth.store"
 
 /**
  * 头部导航栏组件
- * 显示品牌 Logo、导航菜单和用户状态（登录/未登录）
+ *
+ * @component
+ * @description 显示品牌 Logo、导航菜单和用户状态（登录/未登录），支持用户下拉菜单和退出登录功能
+ *
+ * @returns {JSX.Element} 头部导航栏组件
+ *
+ * @example
+ * <Header />
  */
 export function Header() {
     const router = useRouter()
@@ -17,7 +31,10 @@ export function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
 
-    // 点击外部关闭下拉菜单
+    /**
+     * 点击外部关闭下拉菜单
+     * @description 监听点击事件，当点击菜单外部区域时关闭下拉菜单
+     */
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -29,14 +46,20 @@ export function Header() {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
-    // 处理退出登录
+    /**
+     * 处理退出登录
+     * @description 清除用户认证状态并跳转到首页
+     */
     const handleLogout = () => {
         logout()
         setIsMenuOpen(false)
         router.push("/")
     }
 
-    // 跳转到个人资料页
+    /**
+     * 跳转到个人资料页
+     * @description 关闭下拉菜单并导航到用户个人资料页面
+     */
     const handleProfile = () => {
         setIsMenuOpen(false)
         router.push("/profile")

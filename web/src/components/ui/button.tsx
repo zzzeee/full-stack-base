@@ -1,7 +1,19 @@
+/**
+ * @file button.tsx
+ * @description 按钮组件，支持多种样式变体和加载状态
+ * @author System
+ * @createDate 2024-01-01
+ */
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils/cn"
 
+/**
+ * 按钮样式变体配置
+ * @constant
+ * @description 定义按钮的不同样式变体（variant）和尺寸（size）
+ */
 const buttonVariants = cva(
     "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
     {
@@ -28,12 +40,38 @@ const buttonVariants = cva(
     }
 )
 
+/**
+ * 按钮组件属性接口
+ *
+ * @interface
+ * @extends {React.ButtonHTMLAttributes<HTMLButtonElement>}
+ * @extends {VariantProps<typeof buttonVariants>}
+ * @property {boolean} [isLoading] - 是否显示加载状态（显示加载动画并禁用按钮）
+ */
 export interface ButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
     isLoading?: boolean
 }
 
+/**
+ * 按钮组件
+ *
+ * @component
+ * @description 通用的按钮组件，支持多种样式变体、尺寸和加载状态
+ *
+ * @param {ButtonProps} props - 组件属性
+ * @param {string} [props.variant="default"] - 按钮样式变体：default、destructive、outline、secondary、ghost、link
+ * @param {string} [props.size="default"] - 按钮尺寸：default、sm、lg、icon
+ * @param {boolean} [props.isLoading] - 是否显示加载状态
+ *
+ * @returns {JSX.Element} 按钮组件
+ *
+ * @example
+ * <Button variant="default" size="lg" isLoading={loading}>
+ *   提交
+ * </Button>
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({ className, variant, size, isLoading, disabled, children, ...props }, ref) => {
         return (

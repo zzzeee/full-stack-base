@@ -1,7 +1,8 @@
-// src/repositories/auth.repository.ts
 /**
- * 认证数据访问层
- * 负责验证码和登录日志的操作
+ * @file auth.repository.ts
+ * @description 认证数据访问层，负责验证码和登录日志的操作
+ * @author System
+ * @createDate 2026-01-25
  */
 
 import { BaseRepository } from './base.repository.ts';
@@ -13,16 +14,26 @@ import type {
     LoginLogInsert,
 } from '@/types/auth.types.ts';
 
+/**
+ * 认证仓储类
+ * 
+ * @class
+ * @extends {BaseRepository}
+ * @description 提供验证码和登录日志的数据访问方法
+ */
 export class AuthRepository extends BaseRepository {
+    /** 验证码表名 */
     private readonly verificationTable = 'email_verification_codes';
+    /** 登录日志表名 */
     private readonly loginLogTable = 'login_logs';
 
     // ==================== 验证码相关 ====================
 
     /**
      * 创建验证码
-     * @param data - 验证码数据
-     * @returns Promise<VerificationCode> - 创建的验证码记录
+     * 
+     * @param {VerificationCodeInsert} data - 验证码数据
+     * @returns {Promise<VerificationCode>} 创建的验证码记录
      */
     createVerificationCode(
         data: VerificationCodeInsert
@@ -36,10 +47,13 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 查找有效的验证码
-     * @param email - 邮箱
-     * @param code - 验证码
-     * @param purpose - 用途
-     * @returns Promise<VerificationCode | null> - 验证码记录或 null
+     * 
+     * @param {string} email - 邮箱
+     * @param {string} code - 验证码
+     * @param {string} purpose - 用途
+     * @returns {Promise<VerificationCode | null>} 验证码记录或 null
+     * 
+     * @description 查询未使用且未过期的验证码，按创建时间倒序返回第一条
      */
     async findValidVerificationCode(
         email: string,
@@ -66,8 +80,9 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 标记验证码为已使用
-     * @param id - 验证码 ID
-     * @returns Promise<void>
+     * 
+     * @param {string} id - 验证码 ID
+     * @returns {Promise<void>}
      */
     async markVerificationCodeAsUsed(id: string): Promise<void> {
         logger.debug('Marking verification code as used', { id });
@@ -83,8 +98,11 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 增加验证码尝试次数
-     * @param id - 验证码 ID
-     * @returns Promise<void>
+     * 
+     * @param {string} id - 验证码 ID
+     * @returns {Promise<void>}
+     * 
+     * @description 先查询验证码记录，然后将其尝试次数加 1
      */
     async incrementVerificationAttempts(id: string): Promise<void> {
         logger.debug('Incrementing verification attempts', { id });
@@ -105,9 +123,10 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 获取最近发送的验证码
-     * @param email - 邮箱
-     * @param purpose - 用途
-     * @returns Promise<Date | null> - 最近发送时间或 null
+     * 
+     * @param {string} email - 邮箱
+     * @param {string} purpose - 用途
+     * @returns {Promise<VerificationCode | null>} 最近发送的验证码记录或 null
      */
     async getLastVerification(
         email: string,
@@ -133,8 +152,9 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 创建登录日志
-     * @param data - 登录日志数据
-     * @returns Promise<LoginLog> - 创建的登录日志记录
+     * 
+     * @param {LoginLogInsert} data - 登录日志数据
+     * @returns {Promise<LoginLog>} 创建的登录日志记录
      */
     createLoginLog(data: LoginLogInsert): Promise<LoginLog> {
         logger.info('Creating login log', {
@@ -147,9 +167,10 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 获取用户登录历史
-     * @param userId - 用户 ID
-     * @param limit - 返回数量
-     * @returns Promise<LoginLog[]> - 登录日志列表
+     * 
+     * @param {string} userId - 用户 ID
+     * @param {number} [limit=10] - 返回数量，默认 10 条
+     * @returns {Promise<LoginLog[]>} 登录日志列表，按创建时间倒序
      */
     async getUserLoginHistory(
         userId: string,
@@ -168,9 +189,10 @@ export class AuthRepository extends BaseRepository {
 
     /**
      * 获取最近的失败登录次数
-     * @param email - 邮箱
-     * @param minutes - 时间范围（分钟）
-     * @returns Promise<number> - 失败次数
+     * 
+     * @param {string} email - 邮箱
+     * @param {number} [minutes=60] - 时间范围（分钟），默认 60 分钟
+     * @returns {Promise<number>} 失败登录次数
      */
     getRecentFailedLoginCount(
         email: string,
@@ -189,6 +211,9 @@ export class AuthRepository extends BaseRepository {
 }
 
 /**
- * 导出单例
+ * 认证仓储单例
+ * 
+ * @constant
+ * @description 全局可用的认证仓储实例
  */
 export const authRepository = new AuthRepository();
