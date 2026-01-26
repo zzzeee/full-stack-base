@@ -8,7 +8,12 @@
 import type { Context } from '@hono/hono';
 import { userService } from '@/services/user.service.ts';
 import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '@lib/api-response.ts';
+import { apiResponse } from '@/lib/api-response.ts';
+import type { 
+    SuccessResponse as _SuccessResponse, 
+    ErrorResponse as _ErrorResponse,
+} from '@/lib/api-response.ts';
+import type { UserProfile as _UserProfile } from '@/types/user.types.ts';
 import {
     ChangePasswordInput,
     UpdateAvatarInput,
@@ -22,7 +27,7 @@ import {
  * 
  * @route GET /api/users/me
  * @param {Context} c - Hono 上下文对象
- * @returns {Promise<Response>} JSON 响应，包含当前用户的完整资料
+ * @returns {Promise<Response<_SuccessResponse<_UserProfile> | _ErrorResponse>>} JSON 响应
  * 
  * @description 从认证中间件获取 userId，返回当前登录用户的资料
  */
@@ -38,9 +43,8 @@ export async function getCurrentUser(c: Context) {
  * 更新用户资料
  * 
  * @route PUT /api/users/me
- * @param {Context} c - Hono 上下文对象
- * @body {UpdateProfileInput} body - 请求体，包含要更新的字段（name、bio、phone）
- * @returns {Promise<Response>} JSON 响应，包含更新后的用户资料
+ * @param {Context<{RequestBody: UpdateProfileInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<_UserProfile> | _ErrorResponse>>} JSON 响应
  */
 export async function updateProfile(c: Context) {
     const userId = c.get('userId');
@@ -57,9 +61,8 @@ export async function updateProfile(c: Context) {
  * 更新头像
  * 
  * @route PUT /api/users/me/avatar
- * @param {Context} c - Hono 上下文对象
- * @body {UpdateAvatarInput} body - 请求体，包含头像 URL
- * @returns {Promise<Response>} JSON 响应，包含更新后的头像 URL
+ * @param {Context<{RequestBody: UpdateAvatarInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<{ avatar_url: string }> | _ErrorResponse>>} JSON 响应
  */
 export async function updateAvatar(c: Context) {
     const userId = c.get('userId');
@@ -79,9 +82,8 @@ export async function updateAvatar(c: Context) {
  * 修改密码
  * 
  * @route PUT /api/users/me/password
- * @param {Context} c - Hono 上下文对象
- * @body {ChangePasswordInput} body - 请求体，包含旧密码和新密码
- * @returns {Promise<Response>} JSON 响应，返回密码修改成功消息
+ * @param {Context<{RequestBody: ChangePasswordInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<null> | _ErrorResponse>>} JSON 响应
  */
 export async function changePassword(c: Context) {
     const userId = c.get('userId');
@@ -100,7 +102,7 @@ export async function changePassword(c: Context) {
  * @route GET /api/users/:id
  * @param {Context} c - Hono 上下文对象
  * @param {string} id - 用户 ID（从路由参数获取）
- * @returns {Promise<Response>} JSON 响应，包含用户的公开资料（不包含敏感信息）
+ * @returns {Promise<Response<_SuccessResponse<Partial<_UserProfile>> | _ErrorResponse>>} JSON 响应
  */
 export async function getUserById(c: Context) {
     const userId = c.req.param('id');
@@ -114,9 +116,8 @@ export async function getUserById(c: Context) {
  * 发送邮箱验证码（用于更换邮箱）
  * 
  * @route POST /api/users/me/email/send-code
- * @param {Context} c - Hono 上下文对象
- * @body {SendEmailVerificationCodeInput} body - 请求体，包含新邮箱地址
- * @returns {Promise<Response>} JSON 响应，返回发送成功消息
+ * @param {Context<{RequestBody: SendEmailVerificationCodeInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<null> | _ErrorResponse>>} JSON 响应
  */
 export async function sendEmailVerificationCode(c: Context) {
     const userId = c.get('userId');
@@ -136,9 +137,8 @@ export async function sendEmailVerificationCode(c: Context) {
  * 确认更换邮箱
  * 
  * @route PUT /api/users/me/email
- * @param {Context} c - Hono 上下文对象
- * @body {ChangeEmailInput} body - 请求体，包含新邮箱地址和验证码
- * @returns {Promise<Response>} JSON 响应，包含更新后的用户资料
+ * @param {Context<{RequestBody: ChangeEmailInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<{ email: string; email_verified: boolean }> | _ErrorResponse>>} JSON 响应
  */
 export async function changeEmail(c: Context) {
     const userId = c.get('userId');

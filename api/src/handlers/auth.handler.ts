@@ -7,25 +7,30 @@
 
 import type { Context } from '@hono/hono';
 import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '@lib/api-response.ts';
+import { apiResponse } from '@/lib/api-response.ts';
+import type { 
+    SuccessResponse as _SuccessResponse, 
+    ErrorResponse as _ErrorResponse,
+} from '@/lib/api-response.ts';
 import { ErrorInfos, ErrorCodes } from '@lib/errors/error-codes.ts';
-import { 
+import {
     SendVerificationCodeInput,
     VerificationCodeLoginInput,
     PasswordLoginInput,
 } from '@schemas/auth.schema.ts'
 import supabase from "@lib/supabase.client.ts";
-import { generateToken } from '@/lib/jwt.ts';
-import { userRepository, UserRepository } from '@/repositories/user.repository.ts';
 import type { LoginResponse } from '@/types/auth.types.ts';
+import { authService } from '@/services/auth.service.ts';
+import { generateToken } from '@/lib/jwt.ts';
+import { userRepository } from '@/repositories/user.repository.ts';
+
 
 /**
  * 发送邮箱验证码
  * 
  * @route POST /api/auth/send-code
- * @param {Context} c - Hono 上下文对象
- * @body {SendVerificationCodeInput} body - 请求体，包含邮箱和用途
- * @returns {Promise<Response>} JSON 响应，成功时返回成功消息，失败时返回错误信息
+ * @param {Context<{RequestBody: SendVerificationCodeInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<null> | _ErrorResponse>>} JSON 响应
  * 
  * @description 使用 Supabase Auth 发送邮箱验证码
  */
@@ -35,14 +40,14 @@ export async function sendVerificationCode(c: Context) {
     const { error } = await supabase.auth.signInWithOtp({
         email: body.email,
     });
-    
-    if(error) {
+
+    if (error) {
         const errorInfo = ErrorInfos[ErrorCodes.EMAIL_SEND_FAILED];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
         )
-    }else {
+    } else {
         return c.json(
             apiResponse.success(null, '验证码已发送，请查收邮件'),
             200
@@ -54,13 +59,13 @@ export async function sendVerificationCode(c: Context) {
  * 验证码登录
  * 
  * @route POST /api/auth/login/code
- * @param {Context} c - Hono 上下文对象
- * @body {VerificationCodeLoginInput} body - 请求体，包含邮箱和验证码
- * @returns {Promise<Response>} JSON 响应，成功时返回用户信息和会话 token
+ * @param {Context<{RequestBody: VerificationCodeLoginInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<LoginResponse> | _ErrorResponse>>} JSON 响应
  * 
- * @description 使用 Supabase Auth 验证验证码并完成登录
+ * @description 使用 Supabase Auth 验证验证码并完成登录。如果验证成功，会自动在 public.users 表中创建用户。
  */
 export async function loginWithVerificationCode(c: Context) {
+    // 路由层已通过 zValidator 校验，这里直接取校验后的数据
     const body: VerificationCodeLoginInput = await c.req.json();
     // 使用 Supabase Auth 验证验证码
     const { data, error } = await supabase.auth.verifyOtp({
@@ -68,153 +73,53 @@ export async function loginWithVerificationCode(c: Context) {
         token: body.code,
         type: 'email',
     });
-    
-    if(error) {
+
+    if (error) {
         const errorInfo = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
         )
-    }else {
+    } else if (!data.user) {
+        logger.error('Supabase verifyOtp returned no user', { data });
+        const errorInfo = ErrorInfos[ErrorCodes.INTERNAL_ERROR];
+        return c.json(
+            apiResponse.error('登录失败，请稍后重试', errorInfo.code),
+            errorInfo.status
+        );
+    } else {
         // Supabase Auth 验证成功后，会在 auth.users 中创建用户
         // 但不会在我们的 public.users 表中创建，需要手动同步
-        const supabaseUserId = data.user!.id;
-        const email = data.user!.email || body.email;
-        
-        if (!email) {
-            logger.error('No email found in Supabase Auth response', { data });
-            const errorInfo = ErrorInfos[ErrorCodes.VALIDATION_ERROR];
+        const supabaseUserId = data.user.id;
+
+        // email 在路由层已校验必填；这里直接使用 body.email 作为业务邮箱
+        const email = body.email;
+
+        try {
+            const user = await authService.ensurePublicUserExists({
+                id: supabaseUserId,
+                email,
+                emailVerified: true, // 验证码登录表示邮箱已验证
+            });
+
+            const loginData = await authService.buildLoginResponse(user);
+
             return c.json(
-                apiResponse.error('邮箱信息缺失', errorInfo.code),
+                apiResponse.success<LoginResponse>(loginData, '登录成功'),
+                200
+            );
+        } catch (syncErr: unknown) {
+            logger.error('Failed to sync user after verifyOtp', {
+                supabaseUserId,
+                email,
+                error: syncErr instanceof Error ? syncErr.message : String(syncErr),
+            });
+            const errorInfo = ErrorInfos[ErrorCodes.INTERNAL_ERROR];
+            return c.json(
+                apiResponse.error('用户注册失败，请稍后重试', errorInfo.code),
                 errorInfo.status
             );
         }
-
-        // 检查 public.users 表中是否存在用户，不存在则自动创建
-        let user = await userRepository.findById(supabaseUserId);
-        
-        if (!user) {
-            // 新用户自动注册：从邮箱提取用户名作为默认名称
-            const emailName = email.split('@')[0] || '用户';
-            
-            logger.info('Auto-registering new user to public.users', {
-                supabaseUserId,
-                email,
-                name: emailName,
-            });
-            
-            try {
-                // 使用管理员客户端创建用户，绕过 RLS 策略
-                const adminUserRepository = new UserRepository(true);
-                user = await adminUserRepository.create({
-                    id: supabaseUserId,
-                    email: email,
-                    name: emailName,
-                    email_verified: true, // 验证码登录表示邮箱已验证
-                    status: 'active',
-                });
-                
-                logger.info('New user auto-registered successfully', {
-                    userId: user.id,
-                    email: user.email,
-                    name: user.name,
-                });
-            } catch (createError: unknown) {
-                // 提取错误信息
-                let errorMessage = '未知错误';
-                let errorCode: string | undefined;
-                let errorDetails: Record<string, unknown> = {};
-                
-                if (createError instanceof Error) {
-                    errorMessage = createError.message;
-                    errorDetails = {
-                        name: createError.name,
-                        stack: createError.stack,
-                    };
-                } else if (createError && typeof createError === 'object') {
-                    // 处理 Supabase 错误对象
-                    const err = createError as Record<string, unknown>;
-                    errorMessage = err.message as string || err.code as string || '创建用户失败';
-                    errorCode = err.code as string;
-                    errorDetails = {
-                        code: err.code,
-                        details: err.details,
-                        hint: err.hint,
-                    };
-                } else {
-                    errorMessage = String(createError);
-                }
-                
-                logger.error('Failed to auto-register user', {
-                    error: errorMessage,
-                    errorCode,
-                    supabaseUserId,
-                    email,
-                    ...errorDetails,
-                });
-                
-                // 如果创建失败（可能是并发创建导致），再次尝试查找
-                user = await userRepository.findById(supabaseUserId);
-                
-                // 如果通过 ID 找不到，尝试通过邮箱查找（处理并发创建的情况）
-                if (!user) {
-                    user = await userRepository.findByEmail(email);
-                    
-                    // 如果通过邮箱找到了用户，但 ID 不匹配，说明数据不一致
-                    if (user && user.id !== supabaseUserId) {
-                        logger.error('User ID mismatch between Supabase Auth and database', {
-                            supabaseUserId,
-                            databaseUserId: user.id,
-                            email,
-                        });
-                        const errorInfo = ErrorInfos[ErrorCodes.INTERNAL_ERROR];
-                        return c.json(
-                            apiResponse.error('用户数据不一致，请联系管理员', errorInfo.code),
-                            errorInfo.status
-                        );
-                    }
-                }
-                
-                // 如果还是找不到，返回错误
-                if (!user) {
-                    logger.error('User not found after auto-register attempt', {
-                        supabaseUserId,
-                        email,
-                        errorMessage,
-                        errorCode,
-                        errorDetails,
-                    });
-                    const errorInfo = ErrorInfos[ErrorCodes.INTERNAL_ERROR];
-                    return c.json(
-                        apiResponse.error('用户注册失败，请稍后重试', errorInfo.code, { 
-                            error: errorMessage,
-                            code: errorCode,
-                            details: errorDetails,
-                        }),
-                        errorInfo.status
-                    );
-                }
-            }
-        }
-
-        // 生成我们自己的 JWT token（因为认证中间件期望的是我们自己的 JWT）
-        const jwtToken = await generateToken({
-            sub: user.id,
-            email: user.email,
-            role: undefined,
-        });
-
-        return c.json(
-            apiResponse.success({
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                },
-                token: jwtToken,
-            } as LoginResponse, '登录成功'),
-            200
-        );
     }
 }
 
@@ -222,9 +127,8 @@ export async function loginWithVerificationCode(c: Context) {
  * 密码登录
  * 
  * @route POST /api/auth/login/password
- * @param {Context} c - Hono 上下文对象
- * @body {PasswordLoginInput} body - 请求体，包含邮箱和密码
- * @returns {Promise<Response>} JSON 响应，成功时返回用户信息和会话 token
+ * @param {Context<{RequestBody: PasswordLoginInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<LoginResponse> | _ErrorResponse>>} JSON 响应
  * 
  * @description 使用 Supabase Auth 进行密码登录
  */
@@ -235,14 +139,14 @@ export async function loginWithPassword(c: Context) {
         email: body.email,
         password: body.password,
     });
-    
-    if(error) {
+
+    if (error) {
         const errorInfo = ErrorInfos[ErrorCodes.AUTH_INVALID_CREDENTIALS];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
         )
-    }else {
+    } else {
         // 从数据库获取用户信息
         const user = await userRepository.findById(data.user!.id);
         if (!user) {
@@ -260,15 +164,17 @@ export async function loginWithPassword(c: Context) {
             role: undefined, // 可以根据需要添加角色
         });
 
+        const loginData: LoginResponse = {
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+            },
+            token: jwtToken,
+        };
+
         return c.json(
-            apiResponse.success({
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                },
-                token: jwtToken,
-            } as LoginResponse, '登录成功'),
+            apiResponse.success<LoginResponse>(loginData, '登录成功'),
             200
         );
     }
@@ -279,7 +185,7 @@ export async function loginWithPassword(c: Context) {
  * 
  * @route POST /api/auth/logout
  * @param {Context} c - Hono 上下文对象
- * @returns {Response} JSON 响应，返回退出登录成功消息
+ * @returns {Response<_SuccessResponse<null> | _ErrorResponse>} JSON 响应
  * 
  * @description
  * 如果使用 JWT，客户端直接删除 Token 即可

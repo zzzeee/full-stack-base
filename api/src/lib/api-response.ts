@@ -42,7 +42,7 @@
  *   message: '用户信息获取成功'
  * }
  */
-interface SuccessResponse<T = unknown> {
+export interface SuccessResponse<T = unknown> {
     success: true;
     data: T;
     message?: string;
@@ -69,7 +69,7 @@ interface SuccessResponse<T = unknown> {
  *   }
  * }
  */
-interface ErrorResponse {
+export interface ErrorResponse {
     success: false;
     error: {
         code: string;
