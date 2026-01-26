@@ -1,6 +1,6 @@
 /**
  * @file logger.ts
- * @description 轻量级日志工具模块，提供易读的格式化输出、彩色终端支持、结构化日志和日志级别控制
+ * @description 日志工具模块，提供易读的格式化输出、结构化日志和日志级别控制
  * @author System
  * @createDate 2026-01-25
  */
@@ -39,186 +39,103 @@ type LogData = Record<string, unknown>;
  * 
  * @interface
  * @property {LogLevel} level - 日志级别，低于此级别的日志将被过滤
- * @property {'pretty' | 'json'} format - 日志格式，pretty 为人类可读格式，json 为机器解析格式
  * @property {boolean} timestamp - 是否显示时间戳
- * @property {boolean} colorize - 是否启用颜色输出
  * @property {string | null} logFile - 日志文件路径，null 表示不写入文件
  */
 interface LoggerConfig {
     level: LogLevel;
-    format: 'pretty' | 'json'; // pretty: 人类可读，json: 机器解析
     timestamp: boolean;
-    colorize: boolean;
     logFile: string | null; // 日志文件路径
 }
 
-// ==================== 颜色工具 ====================
+// ==================== 工具函数 ====================
 
 /**
- * ANSI 颜色代码映射
+ * 获取默认日志文件路径
+ * logger.ts 文件前2级目录下的logs，文件名为日期(如:2026-01-26.log)
+ * logger.ts 位于 api/src/lib/logger.ts，前2级目录是 api，所以日志文件在 api/logs/日期.log
  * 
- * @constant
- * @description 用于终端输出的颜色控制代码
+ * @returns {string} 默认日志文件路径
  */
-const colors = {
-    /** 重置所有样式 */
-    reset: '\x1b[0m',
-    /** 加粗文本 */
-    bright: '\x1b[1m',
-    /** 暗淡文本 */
-    dim: '\x1b[2m',
-
-    // 前景色
-    /** 黑色 */
-    black: '\x1b[30m',
-    /** 红色 */
-    red: '\x1b[31m',
-    /** 绿色 */
-    green: '\x1b[32m',
-    /** 黄色 */
-    yellow: '\x1b[33m',
-    /** 蓝色 */
-    blue: '\x1b[34m',
-    /** 洋红色 */
-    magenta: '\x1b[35m',
-    /** 青色 */
-    cyan: '\x1b[36m',
-    /** 白色 */
-    white: '\x1b[37m',
-    /** 灰色 */
-    gray: '\x1b[90m',
-
-    // 背景色
-    /** 红色背景 */
-    bgRed: '\x1b[41m',
-    /** 黄色背景 */
-    bgYellow: '\x1b[43m',
-    /** 蓝色背景 */
-    bgBlue: '\x1b[44m',
-};
-
-/**
- * 为文本添加颜色
- * 
- * @param {string} text - 要着色的文本
- * @param {keyof typeof colors} color - 颜色名称
- * @returns {string} 带颜色代码的文本
- */
-function colorize(text: string, color: keyof typeof colors): string {
-    return `${colors[color]}${text}${colors.reset}`;
+function getDefaultLogFile(): string {
+    // 获取当前文件的路径
+    const currentFile = new URL(import.meta.url).pathname;
+    // 获取前2级目录（api/src/lib/logger.ts -> api/logs）
+    const parts = currentFile.split('/').filter(p => p); // 过滤空字符串
+    
+    // 找到 'api' 或 'src' 的索引
+    const apiIndex = parts.findIndex(p => p === 'api');
+    const srcIndex = parts.findIndex(p => p === 'src');
+    
+    let baseDir: string;
+    if (apiIndex !== -1) {
+        // 如果找到 api，使用 api 目录
+        baseDir = '/' + parts.slice(0, apiIndex + 1).join('/');
+    } else if (srcIndex !== -1) {
+        // 如果找到 src，使用 src 的上一级目录
+        baseDir = '/' + parts.slice(0, srcIndex).join('/');
+    } else {
+        // 如果都找不到，使用当前工作目录
+        baseDir = Deno.cwd();
+    }
+    
+    // 生成日期文件名
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    return `${baseDir}/logs/${today}.log`;
 }
-
-// ==================== 日志级别配置 ====================
-
-/**
- * 日志级别显示配置
- * 
- * @constant
- * @description 定义每个日志级别的显示标签、颜色和图标
- */
-const levelConfig = {
-    [LogLevel.DEBUG]: {
-        label: 'DEBUG',
-        color: 'gray' as const,
-        icon: '🔍',
-    },
-    [LogLevel.INFO]: {
-        label: 'INFO ',
-        color: 'blue' as const,
-        icon: 'ℹ️ ',
-    },
-    [LogLevel.WARN]: {
-        label: 'WARN ',
-        color: 'yellow' as const,
-        icon: '⚠️ ',
-    },
-    [LogLevel.ERROR]: {
-        label: 'ERROR',
-        color: 'red' as const,
-        icon: '❌',
-    },
-    [LogLevel.FATAL]: {
-        label: 'FATAL',
-        color: 'bgRed' as const,
-        icon: '💀',
-    },
-};
-
-// ==================== 格式化工具 ====================
 
 /**
  * 格式化时间戳
  * 
- * @returns {string} 格式化的时间戳字符串（YYYY-MM-DD HH:mm:ss）
+ * @returns {string} 格式化的时间戳字符串（YYYY-MM-DD HH:mm:ss.SSS）
  */
 function formatTimestamp(): string {
     const now = new Date();
     const date = now.toISOString().split('T')[0];
     const time = now.toTimeString().split(' ')[0];
-    return `${date} ${time}`;
+    const ms = now.getMilliseconds().toString().padStart(3, '0');
+    return `${date} ${time}.${ms}`;
 }
 
 /**
- * 格式化数据对象（易读格式）
+ * 格式化数据对象为 key: value 格式
  * 
  * @param {LogData} data - 要格式化的日志数据对象
- * @returns {string} 格式化后的数据字符串
+ * @returns {string[]} 格式化后的数据行数组
  */
-function formatData(data: LogData): string {
+function formatData(data: LogData): string[] {
     const entries = Object.entries(data);
+    if (entries.length === 0) return [];
 
-    if (entries.length === 0) return '';
+    return entries.map(([key, value]) => {
+        let valueStr: string;
 
-    // 单行格式化（简洁）
-    const formatted = entries
-        .map(([key, value]) => {
-            let valueStr: string;
-
-            // 特殊处理不同类型
-            if (value === null) {
-                valueStr = 'null';
-            } else if (value === undefined) {
-                valueStr = 'undefined';
-            } else if (typeof value === 'string') {
-                valueStr = `"${value}"`;
-            } else if (typeof value === 'object') {
-                // 对象简化显示
-                try {
-                    const json = JSON.stringify(value);
-                    // 如果太长，截断
-                    valueStr = json.length > 2000
-                        ? `${json.substring(0, 2000)}...`
-                        : json;
-                } catch {
-                    valueStr = '[Object]';
-                }
-            } else {
-                valueStr = String(value);
+        // 特殊处理不同类型
+        if (value === null) {
+            valueStr = 'null';
+        } else if (value === undefined) {
+            valueStr = 'undefined';
+        } else if (typeof value === 'string') {
+            // 字符串直接显示，如果包含换行符则处理
+            valueStr = value.includes('\n') 
+                ? `\n${value.split('\n').map(line => `    ${line}`).join('\n')}`
+                : value;
+        } else if (typeof value === 'object') {
+            // 对象转换为 JSON，如果太长则截断
+            try {
+                const json = JSON.stringify(value, null, 2);
+                valueStr = json.length > 2000
+                    ? `${json.substring(0, 2000)}...`
+                    : json;
+            } catch {
+                valueStr = '[Object]';
             }
+        } else {
+            valueStr = String(value);
+        }
 
-            return `${colorize(key, 'cyan')}=${valueStr}`;
-        })
-        .join(' ');
-
-    return ` ${colorize('│', 'dim')} ${formatted}`;
-}
-
-/**
- * 格式化堆栈信息
- * 
- * @param {string} [stack] - 错误堆栈字符串
- * @returns {string} 格式化后的堆栈信息
- */
-function formatStack(stack?: string): string {
-    if (!stack) return '';
-
-    const lines = stack.split('\n');
-    // 只显示前 5 行堆栈
-    const relevant = lines.slice(0, 5).map(line =>
-        `  ${colorize('│', 'dim')} ${colorize(line.trim(), 'gray')}`
-    );
-
-    return '\n' + relevant.join('\n');
+        return `  ${key}: ${valueStr}`;
+    });
 }
 
 // ==================== Logger 类 ====================
@@ -232,6 +149,8 @@ function formatStack(stack?: string): string {
 class Logger {
     /** Logger 配置 */
     private config: LoggerConfig;
+    /** 当前请求 ID（用于标记请求） */
+    private currentRequestId: string | null = null;
 
     /**
      * 创建 Logger 实例
@@ -242,15 +161,15 @@ class Logger {
     constructor(config?: Partial<LoggerConfig>) {
         // 从环境变量读取配置
         const envLevel = Deno.env.get('LOG_LEVEL')?.toUpperCase() as keyof typeof LogLevel | undefined;
-        const envFormat = Deno.env.get('LOG_FORMAT') as 'pretty' | 'json' | undefined;
         const envLogFile = Deno.env.get('LOG_FILE') || null;
+
+        // 如果没有设置 LOG_FILE，使用默认路径
+        const logFile = envLogFile || getDefaultLogFile();
 
         this.config = {
             level: envLevel ? LogLevel[envLevel] : LogLevel.INFO,
-            format: envFormat || 'pretty',
             timestamp: true,
-            colorize: true,
-            logFile: envLogFile,
+            logFile: logFile,
             ...config,
         };
 
@@ -331,81 +250,101 @@ class Logger {
      * @param {LogLevel} level - 日志级别
      * @param {string} message - 日志消息
      * @param {LogData} [data] - 可选的附加数据
-     * @description 根据配置格式化并输出日志，支持 pretty 和 json 两种格式
+     * @description 格式化并输出日志，文件格式为易读的 key: value 格式
      */
     private log(level: LogLevel, message: string, data?: LogData) {
         // 级别过滤
         if (level < this.config.level) return;
 
-        const levelInfo = levelConfig[level];
+        const levelLabels = {
+            [LogLevel.DEBUG]: 'DEBUG',
+            [LogLevel.INFO]: 'INFO ',
+            [LogLevel.WARN]: 'WARN ',
+            [LogLevel.ERROR]: 'ERROR',
+            [LogLevel.FATAL]: 'FATAL',
+        };
 
-        // JSON 格式（机器解析）
-        if (this.config.format === 'json') {
-            const logEntry = {
-                timestamp: new Date().toISOString(),
-                level: levelInfo.label.trim(),
-                message,
-                ...data,
-            };
-            const logLine = JSON.stringify(logEntry);
-            console.log(logLine);
-            // 异步写入文件，不阻塞
-            this.writeToFile(logLine).catch(err => {
-                console.error('Failed to write log to file:', err);
-            });
-            return;
+        const levelLabel = levelLabels[level];
+        const timestamp = this.config.timestamp ? formatTimestamp() : '';
+
+        // 构建日志行
+        const logLines: string[] = [];
+
+        // 时间戳 + 级别 + 消息
+        const mainLine = timestamp 
+            ? `${timestamp} [${levelLabel}] ${message}`
+            : `[${levelLabel}] ${message}`;
+        
+        logLines.push(mainLine);
+
+        // 添加数据（key: value 格式）
+        if (data && Object.keys(data).length > 0) {
+            const dataLines = formatData(data);
+            logLines.push(...dataLines);
         }
 
-        // Pretty 格式（人类可读）
-        const parts: string[] = [];
-
-        // 1. 时间戳
-        if (this.config.timestamp) {
-            parts.push(colorize(formatTimestamp(), 'dim'));
-        }
-
-        // 2. 级别标签（带图标和颜色）
-        const levelLabel = this.config.colorize
-            ? `${levelInfo.icon} ${colorize(levelInfo.label, levelInfo.color)}`
-            : `[${levelInfo.label}]`;
-        parts.push(levelLabel);
-
-        // 3. 消息（加粗）
-        const formattedMessage = this.config.colorize
-            ? colorize(message, 'bright')
-            : message;
-        parts.push(formattedMessage);
-
-        // 输出主要信息
-        const mainLine = parts.join(' ');
-        console.log(mainLine);
-        // 异步写入文件，不阻塞
-        this.writeToFile(mainLine).catch(err => {
-            console.error('Failed to write log to file:', err);
+        // 输出到控制台（带颜色，用于终端查看）
+        const consoleLines = logLines.map(line => {
+            // 控制台输出可以带颜色，但文件输出不带颜色
+            if (level === LogLevel.ERROR || level === LogLevel.FATAL) {
+                return `\x1b[31m${line}\x1b[0m`; // 红色
+            } else if (level === LogLevel.WARN) {
+                return `\x1b[33m${line}\x1b[0m`; // 黄色
+            } else if (level === LogLevel.DEBUG) {
+                return `\x1b[90m${line}\x1b[0m`; // 灰色
+            }
+            return line;
         });
 
-        // 4. 附加数据（下一行缩进）
-        if (data && Object.keys(data).length > 0) {
-            const dataLine = formatData(data);
-            console.log(dataLine);
-            // 异步写入文件，不阻塞
-            this.writeToFile(dataLine).catch(err => {
+        consoleLines.forEach(line => console.log(line));
+
+        // 写入文件（不带颜色）
+        logLines.forEach(line => {
+            this.writeToFile(line).catch(err => {
                 console.error('Failed to write log to file:', err);
             });
-        }
+        });
+    }
 
-        // 5. 堆栈信息（如果有）
-        if (data?.stack && typeof data.stack === 'string') {
-            const stackLine = formatStack(data.stack);
-            console.log(stackLine);
-            // 异步写入文件，不阻塞
-            this.writeToFile(stackLine).catch(err => {
-                console.error('Failed to write log to file:', err);
+    // ==================== 公开方法 ====================
+
+    /**
+     * 标记请求开始
+     * 
+     * @param {string} requestId - 请求 ID（可选）
+     * @param {LogData} [data] - 可选的附加数据
+     */
+    requestStart(requestId?: string, data?: LogData) {
+        this.currentRequestId = requestId || `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        this.writeToFile('---------- request start ----------').catch(() => {});
+        if (this.config.timestamp) {
+            this.writeToFile(`  time: ${formatTimestamp()}`).catch(() => {});
+        }
+        if (requestId) {
+            this.writeToFile(`  requestId: ${requestId}`).catch(() => {});
+        }
+        if (data && Object.keys(data).length > 0) {
+            formatData(data).forEach(line => {
+                this.writeToFile(line).catch(() => {});
             });
         }
     }
 
-    // ==================== 公开方法 ====================
+    /**
+     * 标记请求结束
+     * 
+     * @param {LogData} [data] - 可选的附加数据
+     */
+    requestEnd(data?: LogData) {
+        if (data && Object.keys(data).length > 0) {
+            formatData(data).forEach(line => {
+                this.writeToFile(line).catch(() => {});
+            });
+        }
+        this.writeToFile('---------- request end ----------').catch(() => {});
+        this.writeToFile('').catch(() => {}); // 空行分隔
+        this.currentRequestId = null;
+    }
 
     /**
      * 记录调试级别日志
@@ -468,19 +407,10 @@ class Logger {
      * @param {number} duration - 请求处理时长（毫秒）
      */
     http(method: string, path: string, status: number, duration: number) {
-        const statusColor = status >= 500 ? 'red'
-            : status >= 400 ? 'yellow'
-                : status >= 300 ? 'cyan'
-                    : 'green';
-
-        const parts = [
-            colorize(method.padEnd(6), 'bright'),
-            path,
-            colorize(status.toString(), statusColor),
-            colorize(`${duration}ms`, 'dim'),
-        ];
-
-        this.log(LogLevel.INFO, parts.join(' '));
+        this.log(LogLevel.INFO, `HTTP ${method} ${path}`, {
+            status,
+            duration: `${duration}ms`,
+        });
     }
 
     /**
@@ -512,15 +442,6 @@ class Logger {
      */
     setLevel(level: LogLevel) {
         this.config.level = level;
-    }
-
-    /**
-     * 设置日志格式
-     * 
-     * @param {'pretty' | 'json'} format - 日志格式，pretty 为人类可读，json 为机器解析
-     */
-    setFormat(format: 'pretty' | 'json') {
-        this.config.format = format;
     }
 }
 

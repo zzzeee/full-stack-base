@@ -53,17 +53,18 @@ export const requestLogger = async (c: Context, next: Next) => {
     }
 
     const clientIP = getClientIP()
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
     // 存储到上下文，供后续使用
     c.set('clientIP', clientIP)
+    c.set('requestId', requestId)
 
     // 记录请求开始
-    logger.info('<--', {
+    logger.requestStart(requestId, {
         method: c.req.method,
         path: c.req.path,
         ip: clientIP,
         userAgent: c.req.header('user-agent'),
-        timestamp: new Date().getTime()
     })
 
     await next()
@@ -71,9 +72,8 @@ export const requestLogger = async (c: Context, next: Next) => {
     const duration = Date.now() - start
 
     // 记录请求完成
-    logger.info('-->', {
+    logger.requestEnd({
         status: c.res.status,
         duration: `${duration}ms`,
-        timestamp: new Date().getTime()
     })
 }

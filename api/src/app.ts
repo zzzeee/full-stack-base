@@ -18,6 +18,7 @@ import userRoutes from '@routes/user.routes.ts';
 import { registerErrorHandler } from '@lib/errors/error-handler.ts';
 import { logger } from './lib/logger.ts';
 import { checkSupabaseHealth } from './lib/supabase.client.ts';
+// import { requestLogger } from "@middlewares/request-logger.ts";
 
 /**
  * Hono 应用实例
@@ -31,6 +32,7 @@ const app = new Hono();
 
 // 请求日志中间件
 app.use('*', honoLogger());
+// app.use('*', requestLogger)
 
 /**
  * CORS 允许的来源列表

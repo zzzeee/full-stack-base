@@ -8,8 +8,6 @@
 
 ## 一、总体设计原则（必须遵守）
 
-### 1. 分层清晰，禁止越级
-
 严格遵循以下调用方向（单向）：
 
 ```
@@ -17,7 +15,7 @@ Route → Handler → Service → Repository
 ```
 
 - `routes`：只定义 URL 与中间件组合
-- `handlers`：只处理 HTTP 输入输出（ctx）
+- `handlers`：只处理 HTTP 输入输出（ctx），复杂逻辑尽量写到services
 - `services`：只写业务规则，不关心 HTTP
 - `repositories`：只做数据访问，不写业务判断
 
@@ -25,22 +23,6 @@ Route → Handler → Service → Repository
 - handler 直接操作数据库
 - service 直接读取 ctx / request
 - repository 里写权限逻辑
-
----
-
-### 2. 可读性优先于“技巧”
-
-- 代码是给人维护的，不是给自己炫技的
-- 宁可多写几行清晰代码，也不要隐式魔法
-- 重要判断、业务分支 **必须有注释说明“为什么”**
-
----
-
-### 3. 显式优于隐式（Explicit > Implicit）
-
-- 所有关键逻辑必须明确写出来
-- 错误必须抛出明确的业务错误（而不是 return null）
-- 权限、边界条件必须显式校验
 
 ---
 
@@ -61,7 +43,7 @@ src/
 ├─ middlewares/          # 通用中间件（auth / validator / logger）
 │
 ├─ lib/                  # 基础设施（error / logger / response）
-├─ types/                # 全局 TypeScript 类型
+├─ types/                # 全局 TypeScript 类型 (含: response的数据结构)
 └─ config/               # 应用配置（env / 常量）
 ```
 
@@ -79,20 +61,63 @@ Route → Handler → Service → Repository
 ### 2. 处理器层（handlers/）
 
 **职责**：
-- 从 `ctx` 中读取参数
+- 从 `ctx` 中读取参数 (如: `const body: VerificationCodeLoginInput = await c.req.json();`)
 - 调用 service
-- 返回统一 API 响应格式
+- 返回统一 API 响应格式 (最好在 `types/*.types.ts` 整理返回结构)
 
 **规则**：
+- 注释规范最好附上结构
+- 代码尽量优雅，逻辑清晰
 - 不直接访问数据库
-- 不包含复杂业务判断
+- 不包含复杂业务处理
 
 ```ts
-// user.handler.ts
-export const getById = async (c: Context) => {
-  const id = c.req.param('id')
-  const user = await userService.getUserById(id)
-  return c.json(ok(user))
+// auth.handler.ts
+/**
+ * 验证码登录
+ * 
+ * @route POST /api/auth/login/code
+ * @param {Context<{RequestBody: VerificationCodeLoginInput}>} c - Hono 上下文对象
+ * @returns {Promise<Response<_SuccessResponse<LoginResponse> | _ErrorResponse>>} JSON 响应
+ * 
+ * @description 使用 Supabase Auth 验证验证码并完成登录。如果验证成功，会自动在 public.users 表中创建用户。
+ */
+export async function loginWithVerificationCode(c: Context) {
+    // 路由层已通过 zValidator 校验，这里直接取校验后的数据
+    const body: VerificationCodeLoginInput = await c.req.json();
+    // 使用 Supabase Auth 验证验证码
+    const { data, error } = await supabase.auth.verifyOtp({
+        email: body.email,
+        token: body.code,
+        type: 'email',
+    });
+
+    if (error) {
+        logger.error('supabase.auth.verifyOtp error:', {
+            email: body.email,
+            error: error.message,
+            errorCode: error.status,
+        });
+        const errorInfo = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
+        return c.json(
+            apiResponse.error(errorInfo.message, errorInfo.code, error),
+            errorInfo.status
+        )
+    } else {
+        // 新用户自动注册成功
+        const user = await authService.ensurePublicUserExists({
+            id: data.user.id,
+            email: body.email,
+            emailVerified: true, // 验证码登录表示邮箱已验证
+        });
+
+        // 组装返回数据，并成功响应
+        const loginData = await authService.buildLoginResponse(user);
+        return c.json(
+            apiResponse.success<LoginResponse>(loginData, '登录成功'),
+            200
+        );
+    }
 }
 ```
 

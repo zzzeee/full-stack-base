@@ -42,12 +42,20 @@ export async function sendVerificationCode(c: Context) {
     });
 
     if (error) {
+        logger.error('Failed to send verification code', {
+            email: body.email,
+            error: error.message,
+            errorCode: error.status,
+        });
         const errorInfo = ErrorInfos[ErrorCodes.EMAIL_SEND_FAILED];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
             errorInfo.status
         )
     } else {
+        logger.info('Verification code sent successfully', {
+            email: body.email,
+        });
         return c.json(
             apiResponse.success(null, '验证码已发送，请查收邮件'),
             200
@@ -75,6 +83,11 @@ export async function loginWithVerificationCode(c: Context) {
     });
 
     if (error) {
+        logger.error('Verification code verification failed', {
+            email: body.email,
+            error: error.message,
+            errorCode: error.status,
+        });
         const errorInfo = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
@@ -141,6 +154,11 @@ export async function loginWithPassword(c: Context) {
     });
 
     if (error) {
+        logger.error('Password login failed', {
+            email: body.email,
+            error: error.message,
+            errorCode: error.status,
+        });
         const errorInfo = ErrorInfos[ErrorCodes.AUTH_INVALID_CREDENTIALS];
         return c.json(
             apiResponse.error(errorInfo.message, errorInfo.code, error),
