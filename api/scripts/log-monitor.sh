@@ -23,6 +23,8 @@ PAGE_SIZE=20
 FILTER_TIME=""
 FILTER_REQUEST_ID=""
 FILTER_USER_ID=""
+FILTER_SUBDIR=""
+FILTER_KEYWORD=""
 
 # -------------------- 全局状态 --------------------
 CURRENT_PAGE=1
@@ -71,10 +73,19 @@ ${BOLD}选项:${RESET}
   ${GREEN}--no-watch${RESET}           一次性显示后退出
   ${GREEN}-h, --help${RESET}           显示此帮助信息
 
-${BOLD}操作说明（监听模式下）:${RESET}
-  ${CYAN}←/a${RESET} 上页      ${CYAN}→/d${RESET} 下页      ${CYAN}p${RESET} 跳页      ${CYAN}s${RESET} 详情
-  ${CYAN}t${RESET} 时间过滤    ${CYAN}r${RESET} ReqID过滤  ${CYAN}u${RESET} User过滤  ${CYAN}c${RESET} 清除过滤
-  ${CYAN}f${RESET} 刷新       ${CYAN}q${RESET} 退出
+${BOLD}Controls (in watch mode):${RESET}
+  ${CYAN}←/a${RESET} Prev      ${CYAN}→/d${RESET} Next      ${CYAN}p${RESET} Jump      ${CYAN}s${RESET} Detail
+  ${CYAN}t${RESET} Time       ${CYAN}r${RESET} ReqID      ${CYAN}u${RESET} User       ${CYAN}k${RESET} Keyword    ${CYAN}m${RESET} Subdir
+  ${CYAN}c${RESET} Clear      ${CYAN}f${RESET} Refresh    ${CYAN}q${RESET} Quit
+
+${BOLD}Time filter examples:${RESET}
+  ${GREEN}Full range:${RESET}             2026/01/26 12:00:00-2026/01/26 16:00:00
+  ${GREEN}Without seconds:${RESET}         2026/01/26 12:00-2026/01/26 16:00
+  ${GREEN}Date range:${RESET}              2026/01/26-2026/01/27
+  ${GREEN}Single date:${RESET}             2026/01/26
+  ${GREEN}Omit start:${RESET}              -2026/01/26, -2026/01/26 11:22, -2026/01/26 11:22:00
+  ${GREEN}Omit end:${RESET}                2026/01/26-, 2026/01/26 11:22-, 2026/01/26 11:22:00-
+  ${GREEN}Relative time:${RESET}          12seconds, 12minutes, 12hours, 12days
 
 ${BOLD}示例:${RESET}
   $0 --dir=/var/logs
@@ -188,6 +199,283 @@ get_level_color() {
     esac
 }
 
+# ISO时间格式化函数 - 输出 Y/m/d H:i:s 格式
+format_iso_time() {
+    local iso_time="$1"
+    # 去除毫秒，修正时区格式
+    local fixed_time=$(echo "$iso_time" | sed -E 's/\.[0-9]+//; s/([+-][0-9]{2}):([0-9]{2})$/\1\2/')
+    date -j -f "%Y-%m-%dT%H:%M:%S%z" "$fixed_time" "+%Y/%m/%d %H:%M:%S" 2>/dev/null || echo "$iso_time"
+}
+
+# 将ISO 8601时间戳转换为Unix时间戳
+iso_to_timestamp() {
+    local iso_time="$1"
+    # 去除毫秒，修正时区格式为+0800格式（macOS date命令需要）
+    local fixed_time=$(echo "$iso_time" | sed -E 's/\.[0-9]+//; s/([+-][0-9]{2}):([0-9]{2})$/\1\2/')
+    # 尝试解析ISO 8601格式（带时区）
+    local result=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" "$fixed_time" +%s 2>/dev/null)
+    if [ -n "$result" ] && [ "$result" != "0" ]; then
+        echo "$result"
+        return 0
+    fi
+    # 如果失败，尝试不带时区的格式（假设本地时区）
+    local no_tz=$(echo "$iso_time" | sed -E 's/\.[0-9]+//' | sed 's/[+-][0-9]\{2\}:[0-9]\{2\}$//')
+    result=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$no_tz" +%s 2>/dev/null)
+    if [ -n "$result" ] && [ "$result" != "0" ]; then
+        echo "$result"
+        return 0
+    fi
+    echo "0"
+    return 1
+}
+
+# ============================================================
+# 时间处理函数
+# ============================================================
+
+# 时间转换函数（支持多种格式）
+parse_time() {
+    local input="$1"
+    local default_hour="${2:-00}"
+    local default_minute="${3:-00}"
+    local default_second="${4:-00}"
+    
+    # 去除空格
+    input=$(echo "$input" | xargs)
+    
+    # 空值处理
+    if [ -z "$input" ]; then
+        echo "empty"
+        return 0
+    fi
+    
+    # 检查是否是相对时间
+    if [[ "$input" =~ ^[0-9]+(seconds|minutes|hours|days)$ ]]; then
+        echo "relative:$input"
+        return 0
+    fi
+    
+    # 尝试多种格式
+    local formats=(
+        "%Y/%m/%d %H:%M:%S"
+        "%Y-%m-%d %H:%M:%S"
+        "%Y/%m/%d %H:%M"
+        "%Y-%m-%d %H:%M"
+        "%Y/%m/%d"
+        "%Y-%m-%d"
+    )
+    
+    for fmt in "${formats[@]}"; do
+        if date -j -f "$fmt" "$input" "+%s" 2>/dev/null; then
+            return 0
+        fi
+    done
+    
+    echo "error"
+    return 1
+}
+
+# 处理时间范围输入
+process_time_range() {
+    local input="$1"
+    
+    # 去除首尾空格
+    input=$(echo "$input" | xargs)
+    
+    # 空值处理
+    if [ -z "$input" ]; then
+        START_TIME=$(date +"%Y-%m-%d 00:00:00")
+        END_TIME=$(date +"%Y-%m-%d 23:59:59")
+        return 0
+    fi
+    
+    # 处理相对时间 (2.11-2.14)
+    if [[ "$input" =~ ^[0-9]+(seconds|minutes|hours|days)$ ]]; then
+        local amount=$(echo "$input" | grep -o '[0-9]*')
+        local unit=$(echo "$input" | grep -o '[a-z]*')
+        
+        END_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+        case "$unit" in
+            seconds)
+                START_TIME=$(date -v -${amount}S +"%Y-%m-%d %H:%M:%S")
+                ;;
+            minutes)
+                START_TIME=$(date -v -${amount}M +"%Y-%m-%d %H:%M:%S")
+                ;;
+            hours)
+                START_TIME=$(date -v -${amount}H +"%Y-%m-%d %H:%M:%S")
+                ;;
+            days)
+                START_TIME=$(date -v -${amount}d +"%Y-%m-%d %H:%M:%S")
+                ;;
+        esac
+        return 0
+    fi
+    
+    # 检查是否有分隔符
+    local separator=""
+    if [[ "$input" == *"-"* ]]; then
+        separator="-"
+    elif [[ "$input" == *","* ]]; then
+        separator=","
+    fi
+    
+    # 如果没有分隔符，认为是单个日期 (2.4)
+    if [ -z "$separator" ]; then
+        local parsed=$(parse_time "$input")
+        if [ "$parsed" != "error" ] && [ "$parsed" != "empty" ]; then
+            START_TIME=$(date -j -f "%s" "$parsed" "+%Y-%m-%d 00:00:00")
+            END_TIME=$(date -j -f "%s" "$parsed" "+%Y-%m-%d 23:59:59")
+            return 0
+        fi
+    fi
+    
+    # 解析分隔的时间范围
+    if [ -n "$separator" ]; then
+        local start_part=$(echo "$input" | awk -F"$separator" '{print $1}' | xargs)
+        local end_part=$(echo "$input" | awk -F"$separator" '{print $2}' | xargs)
+        
+        # 处理省略开始时间的情况 (2.5-2.7)
+        if [ -z "$start_part" ] && [ -n "$end_part" ]; then
+            START_TIME="1970-01-01 00:00:00"  # 最早时间
+            local end_ts=$(parse_time "$end_part")
+            if [ "$end_ts" != "error" ]; then
+                # 检查是否包含时间部分
+                if [[ "$end_part" =~ [0-9]:[0-9] ]]; then
+                    END_TIME=$(date -j -f "%s" "$end_ts" "+%Y-%m-%d %H:%M:%S")
+                else
+                    # 只有日期，设置为当天的23:59:59
+                    END_TIME=$(date -j -f "%s" "$end_ts" "+%Y-%m-%d 23:59:59")
+                fi
+            else
+                END_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+            fi
+            return 0
+        fi
+        
+        # 处理省略结束时间的情况 (2.8-2.10)
+        if [ -n "$start_part" ] && [ -z "$end_part" ]; then
+            local start_ts=$(parse_time "$start_part")
+            if [ "$start_ts" != "error" ]; then
+                # 检查是否包含时间部分
+                if [[ "$start_part" =~ [0-9]:[0-9] ]]; then
+                    START_TIME=$(date -j -f "%s" "$start_ts" "+%Y-%m-%d %H:%M:%S")
+                else
+                    # 只有日期，设置为当天的00:00:00
+                    START_TIME=$(date -j -f "%s" "$start_ts" "+%Y-%m-%d 00:00:00")
+                fi
+                END_TIME=$(date +"%Y-%m-%d %H:%M:%S")  # 当前时间
+            else
+                START_TIME=$(date +"%Y-%m-%d 00:00:00")
+                END_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+            fi
+            return 0
+        fi
+        
+        # 完整的开始和结束时间 (2.1-2.3)
+        if [ -n "$start_part" ] && [ -n "$end_part" ]; then
+            local start_ts=$(parse_time "$start_part")
+            local end_ts=$(parse_time "$end_part")
+            
+            if [ "$start_ts" != "error" ] && [ "$end_ts" != "error" ]; then
+                # 检查开始时间是否包含时间部分
+                if [[ "$start_part" =~ [0-9]:[0-9] ]]; then
+                    START_TIME=$(date -j -f "%s" "$start_ts" "+%Y-%m-%d %H:%M:%S")
+                else
+                    # 只有日期，设置为当天的00:00:00 (2.3)
+                    START_TIME=$(date -j -f "%s" "$start_ts" "+%Y-%m-%d 00:00:00")
+                fi
+                
+                # 检查结束时间是否包含时间部分
+                if [[ "$end_part" =~ [0-9]:[0-9] ]]; then
+                    END_TIME=$(date -j -f "%s" "$end_ts" "+%Y-%m-%d %H:%M:%S")
+                else
+                    # 只有日期，设置为当天的23:59:59 (2.3)
+                    END_TIME=$(date -j -f "%s" "$end_ts" "+%Y-%m-%d 23:59:59")
+                fi
+                return 0
+            fi
+        fi
+    fi
+    
+    # 默认返回当天
+    START_TIME=$(date +"%Y-%m-%d 00:00:00")
+    END_TIME=$(date +"%Y-%m-%d 23:59:59")
+}
+
+# ============================================================
+# 显示函数
+# ============================================================
+
+print_header() {
+    safe_clear
+    
+    # 顶部边框和标题
+    local total_width=80  # 控制总宽度
+    echo -e "${BOLD}${CYAN}┌$(printf '─%.0s' $(seq 1 $((total_width-2))))┐${RESET}"
+    
+    # 标题行
+    local title="Log Monitor Panel"
+    local title_padding=$((total_width - ${#title} - 4))
+    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}$title${RESET} $(printf ' %.0s' $(seq 1 $title_padding))${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}├$(printf '─%.0s' $(seq 1 $((total_width-2))))┤${RESET}"
+    
+    # 目录路径（绝对路径）
+    LOG_DIR_ABS=$(get_absolute_path "$LOG_DIR")
+    local dir_display="$LOG_DIR_ABS"
+    [ ${#dir_display} -gt $((total_width-10)) ] && dir_display="...${dir_display: -$((total_width-13))}"
+    local dir_line="Directory: $dir_display"
+    local dir_padding=$((total_width - ${#dir_line} - 3))
+    echo -e "${BOLD}${CYAN}│${RESET} $dir_line$(printf ' %.0s' $(seq 1 $dir_padding))${CYAN}${BOLD}│${RESET}"
+    
+    # 时间范围
+    local start_display="${START_TIME:0:10} ${START_TIME:11:8}"
+    local end_display="${END_TIME:0:10} ${END_TIME:11:8}"
+    local time_line="Time Range: $start_display - $end_display"
+    local time_padding=$((total_width - ${#time_line} - 3))
+    echo -e "${BOLD}${CYAN}│${RESET} $time_line$(printf ' %.0s' $(seq 1 $time_padding))${CYAN}${BOLD}│${RESET}"
+    
+    # 子目录显示 - 显示所有子目录名称
+    local subdir_display=""
+    if [ -n "$FILTER_SUBDIR" ]; then
+        subdir_display="$FILTER_SUBDIR"
+    elif [ -n "$SUBDIRS" ]; then
+        subdir_display="$SUBDIRS"
+    else
+        # 列出所有子目录
+        local all_subdirs=()
+        if [ -d "$LOG_DIR_ABS" ]; then
+            while IFS= read -r dir; do
+                if [ -d "$dir" ] && [ -n "$dir" ]; then
+                    all_subdirs+=("$(basename "$dir")")
+                fi
+            done < <(find "$LOG_DIR_ABS" -maxdepth 1 -type d ! -path "$LOG_DIR_ABS" 2>/dev/null | sort)
+        fi
+        if [ ${#all_subdirs[@]} -gt 0 ]; then
+            subdir_display=$(IFS=','; echo "${all_subdirs[*]}")
+        else
+            subdir_display="all"
+        fi
+    fi
+    local subdir_line="Subdirs: $subdir_display"
+    local subdir_padding=$((total_width - ${#subdir_line} - 3))
+    echo -e "${BOLD}${CYAN}│${RESET} $subdir_line$(printf ' %.0s' $(seq 1 $subdir_padding))${CYAN}${BOLD}│${RESET}"
+    
+    # 过滤条件（不包含时间和子目录，因为已单独显示）
+    local filter_display=""
+    [ -n "$FILTER_REQUEST_ID" ] && filter_display="${filter_display}ReqID:${FILTER_REQUEST_ID} "
+    [ -n "$FILTER_USER_ID" ] && filter_display="${filter_display}User:${FILTER_USER_ID} "
+    [ -n "$FILTER_KEYWORD" ] && filter_display="${filter_display}Keyword:${FILTER_KEYWORD} "
+    [ -z "$filter_display" ] && filter_display="none"
+    
+    local filter_line="Filters: $filter_display"
+    local filter_padding=$((total_width - ${#filter_line} - 3))
+    echo -e "${BOLD}${CYAN}│${RESET} $filter_line$(printf ' %.0s' $(seq 1 $filter_padding))${CYAN}${BOLD}│${RESET}"
+    
+    echo -e "${BOLD}${CYAN}└$(printf '─%.0s' $(seq 1 $((total_width-2))))┘${RESET}"
+    echo ""
+}
+
 # 读取并处理日志（倒序排列）
 read_logs() {
     local tmp=$(mktemp)
@@ -197,41 +485,47 @@ read_logs() {
     LOG_DIR_ABS=$(get_absolute_path "$LOG_DIR")
 
     # 构建搜索文件列表
-    if [ -n "$SUBDIRS" ]; then
+    local search_dirs=()
+    if [ -n "$FILTER_SUBDIR" ]; then
+        # 如果设置了子目录过滤，只搜索该子目录
+        if [ -d "$LOG_DIR_ABS/$FILTER_SUBDIR" ]; then
+            search_dirs+=("$LOG_DIR_ABS/$FILTER_SUBDIR")
+        else
+            echo "[]" > "$tmp"
+            echo "$tmp"
+            return
+        fi
+    elif [ -n "$SUBDIRS" ]; then
         IFS=',' read -ra ds <<< "$SUBDIRS"
         for d in "${ds[@]}"; do
             d=$(echo "$d" | xargs)  # 去除空格
             if [ -d "$LOG_DIR_ABS/$d" ]; then
-                files+=("$LOG_DIR_ABS/$d")
+                search_dirs+=("$LOG_DIR_ABS/$d")
             fi
         done
-        [ ${#files[@]} -eq 0 ] && { echo "[]" > "$tmp"; echo "$tmp"; return; }
+        [ ${#search_dirs[@]} -eq 0 ] && { echo "[]" > "$tmp"; echo "$tmp"; return; }
     else
-        files+=("$LOG_DIR_ABS")
+        search_dirs+=("$LOG_DIR_ABS")
     fi
 
     # 查找并读取所有日志文件
-    find "${files[@]}" -type f -name "*.log" 2>/dev/null | while read -r f; do
+    find "${search_dirs[@]}" -type f -name "*.log" 2>/dev/null | while read -r f; do
         while IFS= read -r line; do
             # 检查是否为有效 JSON
             if ! echo "$line" | jq -e '.timestamp and .requestId' >/dev/null 2>&1; then
                 continue
             fi
             
-            # 时间过滤
-            local ts=$(echo "$line" | jq -r '.timestamp' | cut -c1-19)
-            local t=$(date -d "$ts" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$ts" +%s 2>/dev/null)
+            # 时间过滤 - 正确解析ISO 8601时间戳
+            local iso_ts=$(echo "$line" | jq -r '.timestamp')
+            local t=$(iso_to_timestamp "$iso_ts")
             
             # 基本时间范围过滤
-            if [ "$t" -ge "$START_TS" ] && [ "$t" -le "$END_TS" ]; then
+            if [ -n "$t" ] && [ "$t" != "0" ] && [ "$t" -ge "$START_TS" ] && [ "$t" -le "$END_TS" ]; then
                 # 额外过滤条件
                 local include=true
                 
-                if [ -n "$FILTER_TIME" ]; then
-                    echo "$line" | jq -r '.timestamp' | grep -iq "$FILTER_TIME" || include=false
-                fi
-                
-                if [ "$include" = true ] && [ -n "$FILTER_REQUEST_ID" ]; then
+                if [ -n "$FILTER_REQUEST_ID" ]; then
                     echo "$line" | jq -r '.requestId' | grep -iq "$FILTER_REQUEST_ID" || include=false
                 fi
                 
@@ -242,6 +536,12 @@ read_logs() {
                     else
                         include=false
                     fi
+                fi
+                
+                if [ "$include" = true ] && [ -n "$FILTER_KEYWORD" ]; then
+                    # 关键词搜索：在message字段中搜索
+                    local msg=$(echo "$line" | jq -r '.message // ""')
+                    echo "$msg" | grep -iq "$FILTER_KEYWORD" || include=false
                 fi
                 
                 [ "$include" = true ] && echo "$line" >> "$tmp"
@@ -259,39 +559,6 @@ read_logs() {
     fi
     
     echo "$tmp"
-}
-
-# ============================================================
-# 显示函数
-# ============================================================
-
-print_header() {
-    safe_clear
-    
-    # 顶部边框和标题
-    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}📊 日志监控面板${RESET} ${GRAY}$(printf '%.0s ' {1..52})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}├──────────────────────────────────────────────────────────────────────────┤${RESET}"
-    
-    # 目录路径（绝对路径）
-    LOG_DIR_ABS=$(get_absolute_path "$LOG_DIR")
-    local dir_display="$LOG_DIR_ABS"
-    [ ${#dir_display} -gt 70 ] && dir_display="...${dir_display: -67}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}📁 目录:${RESET} ${GREEN}$dir_display${RESET} ${GRAY}$(printf '%.0s ' {1..$((70 - ${#dir_display}))})${CYAN}${BOLD}│${RESET}"
-    
-    # 时间范围和过滤条件在一行
-    local time_display="${START_TIME:11:8} - ${END_TIME:11:8}"
-    local filter_display=""
-    [ -n "$FILTER_TIME" ] && filter_display="${filter_display}时间:${FILTER_TIME} "
-    [ -n "$FILTER_REQUEST_ID" ] && filter_display="${filter_display}ReqID:${FILTER_REQUEST_ID} "
-    [ -n "$FILTER_USER_ID" ] && filter_display="${filter_display}User:${FILTER_USER_ID} "
-    [ -z "$filter_display" ] && filter_display="无过滤"
-    
-    local line2="🕒 ${time_display}  |  🔍 ${filter_display}"
-    echo -e "${BOLD}${CYAN}│${RESET} $line2 ${GRAY}$(printf '%.0s ' {1..$((72 - ${#line2}))})${CYAN}${BOLD}│${RESET}"
-    
-    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────────┘${RESET}"
-    echo ""
 }
 
 display_table() {
@@ -318,14 +585,14 @@ display_table() {
     local display_end="$end_index"
     [ "$TOTAL_LOGS" -eq 0 ] && display_start=0 && display_end=0
     
-    # 表格标题（去掉下划线）
-    echo -e "${BOLD}${CYAN}  序号   时间     级别       RequestID      用户ID                                  消息${RESET}"
-    echo -e "${GRAY}$(printf '─%.0s' {1..110})${RESET}"
+    # 表格标题
+    echo -e "${BOLD}${CYAN}  #     Time                Level     RequestID         UserID                                    Message${RESET}"
+    echo -e "${GRAY}$(printf '─%.0s' {1..120})${RESET}"
     
     if [ "$TOTAL_LOGS" -eq 0 ]; then
-        echo -e "  ${YELLOW}暂无符合条件的数据${RESET}"
-        echo -e "${GRAY}$(printf '─%.0s' {1..110})${RESET}"
-        echo -e "${BOLD}当前 ${CURRENT_PAGE}/${TOTAL_PAGES} 页, 共 ${TOTAL_LOGS} 条${RESET}"
+        echo -e "  ${YELLOW}No data found${RESET}"
+        echo -e "${GRAY}$(printf '─%.0s' {1..120})${RESET}"
+        echo -e "${BOLD}Page ${CURRENT_PAGE}/${TOTAL_PAGES}, Total ${TOTAL_LOGS} logs${RESET}"
         return
     fi
     
@@ -336,52 +603,43 @@ display_table() {
         local global_idx=$((start_index + 1))
         start_index=$((start_index + 1))
         
-        local start_date="${START_TIME:0:10}"
-        local end_date="${END_TIME:0:10}"
-        local time_display=""
-        if [ "$start_date" == "$end_date" ]; then
-            # 同一天只显示时间范围
-            time_display="${START_TIME:11:8} - ${END_TIME:11:8}"
-        else
-            # 不同天显示完整日期时间
-            time_display="${START_TIME} - ${END_TIME}"
-            [ ${#time_display} -gt 40 ] && time_display="${START_TIME:5} - ${END_TIME:5}"
-        fi
+        # 格式化时间 - Y/m/d H:i:s 格式
+        local formatted_time=$(format_iso_time "$timestamp")
         
-        # 截断长字段（加宽了userId列）
-        local request_display="${request_id:0:12}"
-        [ ${#request_id} -gt 12 ] && request_display="${request_display}..."
+        # 截断长字段
+        local request_display="${request_id:0:14}"
+        [ ${#request_id} -gt 14 ] && request_display="${request_display}..."
         
-        local user_display="${user_id:0:40}"
-        [ ${#user_id} -gt 40 ] && user_display="${user_display}..."
+        # 用户ID显示完整
+        local user_display="$user_id"
         
-        local msg_display="${message:0:60}"
-        [ ${#message} -gt 60 ] && msg_display="${msg_display}..."
+        local msg_display="${message:0:40}"
+        [ ${#message} -gt 40 ] && msg_display="${msg_display}..."
         
         # 获取级别颜色
         local level_color=$(get_level_color "$level")
         
         # 显示行
-        printf "  %-4s %9s  ${level_color}%-8s${RESET} %-14s %-40s %s\n" \
-            "$global_idx" "$time_display" "$level" "$request_display" "$user_display" "$msg_display"
+        printf "  %-4s %-20s ${level_color}%-8s${RESET} %-16s %-40s %s\n" \
+            "$global_idx" "$formatted_time" "$level" "$request_display" "$user_display" "$msg_display"
     done
     
-    echo -e "${GRAY}$(printf '─%.0s' {1..110})${RESET}"
+    echo -e "${GRAY}$(printf '─%.0s' {1..120})${RESET}"
     
     # 分页信息（单行）
     if [ "$TOTAL_PAGES" -gt 1 ]; then
-        echo -e "${BOLD}当前 ${CURRENT_PAGE}/${TOTAL_PAGES} 页, 共 ${TOTAL_LOGS} 条  (显示 ${display_start}-${display_end})${RESET}"
+        echo -e "${BOLD}Page ${CURRENT_PAGE}/${TOTAL_PAGES}, Total ${TOTAL_LOGS} logs  (Showing ${display_start}-${display_end})${RESET}"
     else
-        echo -e "${BOLD}共 ${TOTAL_LOGS} 条日志${RESET}"
+        echo -e "${BOLD}Total ${TOTAL_LOGS} logs${RESET}"
     fi
 }
 
 show_controls() {
     echo ""
-    echo -e "${CYAN}${BOLD}📋 操作说明:${RESET}"
-    echo -e "  ${GREEN}←/a${RESET} 上页        ${GREEN}→/d${RESET} 下页        ${GREEN}p${RESET} 跳页        ${GREEN}s${RESET} 详情"
-    echo -e "  ${GREEN}t${RESET} 时间过滤      ${GREEN}r${RESET} Req过滤        ${GREEN}u${RESET} User过滤    ${GREEN}c${RESET} 清除过滤"
-    echo -e "  ${GREEN}f${RESET} 刷新          ${GREEN}q${RESET} 退出"
+    echo -e "${CYAN}${BOLD}Controls:${RESET}"
+    echo -e "  ${GREEN}←/a${RESET} 上一页      ${GREEN}→/d${RESET} 下一页      ${GREEN}p${RESET} 跳页      ${CYAN}s${RESET} 详情"
+    echo -e "  ${GREEN}t${RESET} 时间过滤      ${GREEN}r${RESET} ReqID过滤     ${GREEN}u${RESET} User过滤  ${GREEN}k${RESET} Keyword过滤  ${GREEN}m${RESET} Subdir过滤"
+    echo -e "  ${CYAN}c${RESET} 清除过滤      ${GREEN}f${RESET} 刷新          ${RED}q${RESET} 退出"
     echo ""
 }
 
@@ -391,34 +649,34 @@ show_controls() {
 
 show_log_detail() {
     safe_clear
-    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}📄 查看日志详情${RESET} ${GRAY}$(printf '%.0s ' {1..52})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}├──────────────────────────────────────────────────────────────────────────┤${RESET}"
+    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}View Log Detail${RESET} ${GRAY}$(printf '%.0s ' {1..56})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}├──────────────────────────────────────────────────────────────────────┤${RESET}"
     
-    echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}可查看序号范围: 1-$TOTAL_LOGS${RESET} ${GRAY}$(printf '%.0s ' {1..42})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${YELLOW}请输入要查看的日志序号: ${RESET}${GRAY}$(printf '%.0s ' {1..37})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────────┘${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}Available index range: 1-$TOTAL_LOGS${RESET} ${GRAY}$(printf '%.0s ' {1..38})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET} ${YELLOW}Enter log index to view: ${RESET}${GRAY}$(printf '%.0s ' {1..38})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────┘${RESET}"
     
     echo -ne "${YELLOW}▶ ${RESET}"
     read -r index
     
     if ! [[ "$index" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}错误: 请输入有效的数字${RESET}"
-        read -n 1 -s -p "按任意键继续..."
+        echo -e "${RED}Error: Please enter a valid number${RESET}"
+        read -n 1 -s -p "Press any key to continue..."
         return 1
     fi
     
     if [ "$index" -lt 1 ] || [ "$index" -gt "$TOTAL_LOGS" ]; then
-        echo -e "${RED}错误: 序号超出范围 (1-$TOTAL_LOGS)${RESET}"
-        read -n 1 -s -p "按任意键继续..."
+        echo -e "${RED}Error: Index out of range (1-$TOTAL_LOGS)${RESET}"
+        read -n 1 -s -p "Press any key to continue..."
         return 1
     fi
     
     # 显示详情
     safe_clear
-    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}📄 日志详情 (序号: $index)${RESET} ${GRAY}$(printf '%.0s ' {1..44})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}├──────────────────────────────────────────────────────────────────────────┤${RESET}"
+    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}Log Detail (Index: $index)${RESET} ${GRAY}$(printf '%.0s ' {1..45})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}├──────────────────────────────────────────────────────────────────────┤${RESET}"
     
     local log_index=$((index - 1))
     local log_json=$(jq -r ".[$log_index]" "$ALL_LOGS_FILE")
@@ -427,8 +685,8 @@ show_log_detail() {
         echo -e "${BOLD}${CYAN}│${RESET} ${GREEN}$line${RESET}"
     done
     
-    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────────┘${RESET}"
-    echo -e "\n${GRAY}按任意键返回主界面...${RESET}"
+    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────┘${RESET}"
+    echo -e "\n${GRAY}Press any key to return...${RESET}"
     read -n 1 -s
 }
 
@@ -436,33 +694,101 @@ set_filter() {
     local type="$1"
     safe_clear
     
-    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────┐${RESET}"
     case "$type" in
         time)
-            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}🕒 设置时间过滤${RESET} ${GRAY}$(printf '%.0s ' {1..50})${CYAN}${BOLD}│${RESET}"
-            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}示例: 10:30, 14:, :45 (支持部分匹配)${RESET} ${GRAY}$(printf '%.0s ' {1..27})${CYAN}${BOLD}│${RESET}"
-            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}输入时间 (留空清除): ${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}Time Filter${RESET} ${GRAY}$(printf '%.0s ' {1..55})${CYAN}${BOLD}│${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}Examples:${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26 12:00:00-2026/01/26 16:00:00  (full range)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26 12:00-2026/01/26 16:00      (without seconds)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26-2026/01/27                 (date range)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26                            (single date)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• -2026/01/26                           (omit start 1)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• -2026/01/26 11:22                     (omit start 2)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• -2026/01/26 11:22:00                  (omit start 3)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26-                           (omit end 1)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26 11:22-                    (omit end 2)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 2026/01/26 11:22:00-                 (omit end 3)${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}• 12seconds/12minutes/12hours/12days   (relative time)${RESET}"
+            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}Enter time range (empty to clear): ${RESET}"
             ;;
         request)
-            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}🔑 设置 RequestID 过滤${RESET} ${GRAY}$(printf '%.0s ' {1..43})${CYAN}${BOLD}│${RESET}"
-            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}输入 RequestID (留空清除): ${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}RequestID Filter${RESET} ${GRAY}$(printf '%.0s ' {1..48})${CYAN}${BOLD}│${RESET}"
+            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}Enter RequestID (empty to clear): ${RESET}"
             ;;
         user)
-            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}👤 设置 UserID 过滤${RESET} ${GRAY}$(printf '%.0s ' {1..46})${CYAN}${BOLD}│${RESET}"
-            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}输入 UserID (留空清除): ${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}UserID Filter${RESET} ${GRAY}$(printf '%.0s ' {1..51})${CYAN}${BOLD}│${RESET}"
+            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}Enter UserID (empty to clear): ${RESET}"
+            ;;
+        keyword)
+            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}Keyword Filter${RESET} ${GRAY}$(printf '%.0s ' {1..50})${CYAN}${BOLD}│${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}Search in message field${RESET}"
+            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}Enter keyword (empty to clear): ${RESET}"
+            ;;
+        subdir)
+            echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}Subdir Filter${RESET} ${GRAY}$(printf '%.0s ' {1..52})${CYAN}${BOLD}│${RESET}"
+            echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}Available subdirs:${RESET}"
+            # 列出所有可用的子目录
+            local dir_count=0
+            if [ -d "$LOG_DIR_ABS" ]; then
+                while IFS= read -r dir; do
+                    if [ -d "$dir" ] && [ -n "$dir" ]; then
+                        local dir_name=$(basename "$dir")
+                        echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}  • $dir_name${RESET}"
+                        dir_count=$((dir_count + 1))
+                    fi
+                done < <(find "$LOG_DIR_ABS" -maxdepth 1 -type d ! -path "$LOG_DIR_ABS" 2>/dev/null | sort)
+                [ "$dir_count" -eq 0 ] && echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}  (no subdirs)${RESET}"
+            fi
+            echo -ne "${BOLD}${CYAN}│${RESET} ${YELLOW}Enter subdir name (empty to clear): ${RESET}"
             ;;
     esac
     
-    echo -e "${GRAY}$(printf '%.0s ' {1..22})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────────┘${RESET}"
+    echo -e "${GRAY}$(printf '%.0s ' {1..20})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────┘${RESET}"
     
     echo -ne "${YELLOW}▶ ${RESET}"
     read -r value
     
     case "$type" in
-        time) FILTER_TIME="$value" ;;
-        request) FILTER_REQUEST_ID="$value" ;;
-        user) FILTER_USER_ID="$value" ;;
+        time)
+            if [ -n "$value" ]; then
+                process_time_range "$value"
+                START_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$START_TIME" +%s 2>/dev/null || date -d "$START_TIME" +%s 2>/dev/null)
+                END_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$END_TIME" +%s 2>/dev/null || date -d "$END_TIME" +%s 2>/dev/null)
+                FILTER_TIME="$value"
+            else
+                FILTER_TIME=""
+                # 恢复默认时间范围
+                START_TIME=$(date +"%Y-%m-%d 00:00:00")
+                END_TIME=$(date +"%Y-%m-%d 23:59:59")
+                START_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$START_TIME" +%s 2>/dev/null || date -d "$START_TIME" +%s 2>/dev/null)
+                END_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$END_TIME" +%s 2>/dev/null || date -d "$END_TIME" +%s 2>/dev/null)
+            fi
+            ;;
+        request)
+            FILTER_REQUEST_ID="$value"
+            ;;
+        user)
+            FILTER_USER_ID="$value"
+            ;;
+        keyword)
+            FILTER_KEYWORD="$value"
+            ;;
+        subdir)
+            if [ -n "$value" ]; then
+                # 验证子目录是否存在
+                if [ -d "$LOG_DIR_ABS/$value" ]; then
+                    FILTER_SUBDIR="$value"
+                else
+                    echo -e "${RED}Error: Subdir not found: $value${RESET}"
+                    read -n 1 -s -p "Press any key to continue..."
+                    return 1
+                fi
+            else
+                FILTER_SUBDIR=""
+            fi
+            ;;
     esac
     
     CURRENT_PAGE=1  # 重置到第一页
@@ -470,23 +796,23 @@ set_filter() {
 
 goto_page() {
     safe_clear
-    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}📑 跳转到指定页码${RESET} ${GRAY}$(printf '%.0s ' {1..48})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}页码范围: 1-$TOTAL_PAGES${RESET} ${GRAY}$(printf '%.0s ' {1..47})${CYAN}${BOLD}│${RESET}"
-    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────────┘${RESET}"
+    echo -e "${BOLD}${CYAN}┌──────────────────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET} ${BOLD}Jump to Page${RESET} ${GRAY}$(printf '%.0s ' {1..58})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET} ${GRAY}Page range: 1-$TOTAL_PAGES${RESET} ${GRAY}$(printf '%.0s ' {1..50})${CYAN}${BOLD}│${RESET}"
+    echo -e "${BOLD}${CYAN}└──────────────────────────────────────────────────────────────────────┘${RESET}"
     
-    echo -ne "${YELLOW}请输入页码 (1-$TOTAL_PAGES): ${RESET}"
+    echo -ne "${YELLOW}Enter page number (1-$TOTAL_PAGES): ${RESET}"
     read -r page
     
     if ! [[ "$page" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}错误: 请输入有效的数字${RESET}"
-        read -n 1 -s -p "按任意键继续..."
+        echo -e "${RED}Error: Please enter a valid number${RESET}"
+        read -n 1 -s -p "Press any key to continue..."
         return 1
     fi
     
     if [ "$page" -lt 1 ] || [ "$page" -gt "$TOTAL_PAGES" ]; then
-        echo -e "${RED}错误: 页码超出范围 (1-$TOTAL_PAGES)${RESET}"
-        read -n 1 -s -p "按任意键继续..."
+        echo -e "${RED}Error: Page out of range (1-$TOTAL_PAGES)${RESET}"
+        read -n 1 -s -p "Press any key to continue..."
         return 1
     fi
     
@@ -536,7 +862,7 @@ keyboard_loop() {
                     ;;
                 's'|'S')
                     if [ "$TOTAL_LOGS" -eq 0 ]; then
-                        echo -e "${RED}没有数据可查看${RESET}"
+                        echo -e "${RED}No data to view${RESET}"
                         sleep 1
                     else
                         stty "$original_stty" 2>/dev/null
@@ -562,10 +888,29 @@ keyboard_loop() {
                     stty -echo -icanon time 0 min 0 2>/dev/null
                     ALL_LOGS_FILE=$(read_logs)
                     ;;
+                'k'|'K')
+                    stty "$original_stty" 2>/dev/null
+                    set_filter "keyword"
+                    stty -echo -icanon time 0 min 0 2>/dev/null
+                    ALL_LOGS_FILE=$(read_logs)
+                    ;;
+                'm'|'M')
+                    stty "$original_stty" 2>/dev/null
+                    set_filter "subdir"
+                    stty -echo -icanon time 0 min 0 2>/dev/null
+                    ALL_LOGS_FILE=$(read_logs)
+                    ;;
                 'c'|'C')
                     FILTER_TIME=""
                     FILTER_REQUEST_ID=""
                     FILTER_USER_ID=""
+                    FILTER_KEYWORD=""
+                    FILTER_SUBDIR=""
+                    # 恢复默认时间范围
+                    START_TIME=$(date +"%Y-%m-%d 00:00:00")
+                    END_TIME=$(date +"%Y-%m-%d 23:59:59")
+                    START_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$START_TIME" +%s 2>/dev/null || date -d "$START_TIME" +%s 2>/dev/null)
+                    END_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$END_TIME" +%s 2>/dev/null || date -d "$END_TIME" +%s 2>/dev/null)
                     CURRENT_PAGE=1
                     ALL_LOGS_FILE=$(read_logs)
                     ;;
@@ -606,59 +951,20 @@ main() {
         exit 1
     fi
     
-    # 日期时间转换函数，支持多种格式
-    convert_datetime() {
-        local datetime="$1"
-        # 去除首尾空格
-        datetime=$(echo "$datetime" | xargs)
-        
-        # 尝试多种格式
-        local formats=(
-            "%Y/%m/%d %H:%M:%S"
-            "%Y-%m-%d %H:%M:%S"
-            "%Y/%m/%d %H:%M"
-            "%Y-%m-%d %H:%M"
-            "%Y/%m/%d"
-            "%Y-%m-%d"
-        )
-        
-        for fmt in "${formats[@]}"; do
-            if date -d "$datetime" "+%s" 2>/dev/null; then
-                return 0
-            elif date -j -f "$fmt" "$datetime" "+%s" 2>/dev/null; then
-                return 0
-            fi
-        done
-        
-        echo "错误: 无法解析时间格式: $datetime" >&2
-        exit 1
-    }
-
-    # 解析起始和结束时间（支持 - 或 , 分隔）
+    # 处理命令行参数中的时间范围
     if [[ "$START_TIME" == *"-"* ]] || [[ "$START_TIME" == *","* ]]; then
-        # 如果输入了范围格式，如 "2026-12-32 11:11:00 - 2026-12-32 11:11:00"
-        if [[ "$START_TIME" == *" - "* ]]; then
-            START_TIME=$(echo "$START_TIME" | awk -F' - ' '{print $1}')
-            END_TIME=$(echo "$START_TIME" | awk -F' - ' '{print $2}')
-        elif [[ "$START_TIME" == *","* ]]; then
-            START_TIME=$(echo "$START_TIME" | awk -F',' '{print $1}' | xargs)
-            END_TIME=$(echo "$START_TIME" | awk -F',' '{print $2}' | xargs)
-        fi
+        process_time_range "$START_TIME"
     fi
-
+    
     # 转换时间戳
-    START_TS=$(convert_datetime "$START_TIME")
-    END_TS=$(convert_datetime "$END_TIME")
-
+    START_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$START_TIME" +%s 2>/dev/null || date -d "$START_TIME" +%s 2>/dev/null)
+    END_TS=$(date -j -f "%Y-%m-%d %H:%M:%S" "$END_TIME" +%s 2>/dev/null || date -d "$END_TIME" +%s 2>/dev/null)
+    
     # 确保 END_TS >= START_TS
     if [ "$END_TS" -lt "$START_TS" ]; then
         echo -e "${RED}错误: 结束时间不能早于开始时间${RESET}"
         exit 1
     fi
-
-    # 更新显示的时间格式（统一为 YYYY-MM-DD HH:MM:SS）
-    START_TIME=$(date -d "@$START_TS" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -j -f "%s" "$START_TS" "+%Y-%m-%d %H:%M:%S")
-    END_TIME=$(date -d "@$END_TS" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -j -f "%s" "$END_TS" "+%Y-%m-%d %H:%M:%S")
     
     # 初始化加载数据
     ALL_LOGS_FILE=$(read_logs)
