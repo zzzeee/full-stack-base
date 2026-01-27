@@ -7,9 +7,9 @@ import {
     assertEquals,
     assertExists,
 } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { AUTH_CONF } from './config.ts';
-import { post } from '../helpers/index.ts';
-import { getEmailCode } from "../helpers/supabase.ts";
+import { AUTH_CONF } from '@tests/auth/config.ts';
+import { post } from '@tests/helpers/index.ts';
+import { getEmailCode } from "@tests/helpers/supabase.ts";
 
 
 // 发送验证码

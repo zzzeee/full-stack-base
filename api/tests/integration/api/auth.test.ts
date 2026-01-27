@@ -8,7 +8,7 @@ import {
     assertEquals,
     assertExists,
 } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { post, sleep, randomEmail, randomPassword } from '../../helpers/index.ts';
+import { post, sleep, randomEmail, randomPassword } from '@tests/helpers/index.ts';
 import { authRepository } from '@repositories/auth.repository.ts'
 
 // 测试用户数据

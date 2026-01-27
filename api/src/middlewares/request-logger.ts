@@ -6,7 +6,39 @@
  */
 
 import { Context, Next } from '@hono/hono'
-import { logger } from '../lib/logger.ts'
+import { logger } from '@/lib/logger.ts'
+
+function redactSensitive(input: unknown): unknown {
+    const SENSITIVE_KEYS = new Set([
+        'password',
+        'old_password',
+        'new_password',
+        'token',
+        'access_token',
+        'refresh_token',
+    ])
+
+    const visit = (v: unknown): unknown => {
+        if (v === null || v === undefined) return v
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v
+        if (Array.isArray(v)) return v.map(visit)
+        if (typeof v === 'object') {
+            const obj = v as Record<string, unknown>
+            const out: Record<string, unknown> = {}
+            for (const [k, val] of Object.entries(obj)) {
+                if (SENSITIVE_KEYS.has(k.toLowerCase())) {
+                    out[k] = '***'
+                } else {
+                    out[k] = visit(val)
+                }
+            }
+            return out
+        }
+        return String(v)
+    }
+
+    return visit(input)
+}
 
 /**
  * 请求日志中间件
@@ -53,27 +85,88 @@ export const requestLogger = async (c: Context, next: Next) => {
     }
 
     const clientIP = getClientIP()
-    const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const requestId = `req_${Math.random().toString(36).slice(2, 10)}`
 
     // 存储到上下文，供后续使用
     c.set('clientIP', clientIP)
     c.set('requestId', requestId)
+    c.header('X-Request-Id', requestId)
 
-    // 记录请求开始
-    logger.requestStart(requestId, {
-        method: c.req.method,
-        path: c.req.path,
-        ip: clientIP,
-        userAgent: c.req.header('user-agent'),
-    })
+    const contentType = c.req.header('content-type') || ''
+    // 尝试提前捕获请求体（仅用于 RESPONSE_FAIL，避免二次读取）
+    let requestBody: unknown = undefined
+    if (contentType.includes('application/json') && c.req.method !== 'GET') {
+        try {
+            const raw = await c.req.raw.clone().text()
+            if (raw && raw.length <= 10_000) {
+                requestBody = redactSensitive(JSON.parse(raw))
+            }
+        } catch {
+            // ignore
+        }
+    }
 
-    await next()
+    let error: unknown = null
+    try {
+        await next()
+    } catch (err) {
+        error = err
+        throw err
+    } finally {
+        const duration = Date.now() - start
 
-    const duration = Date.now() - start
+        // INFO：基础请求日志（简化）
+        logger.info('HTTP request', {
+            requestId,
+            userId: c.get('userId'),
+            ip: clientIP,
+            context: {
+                method: c.req.method,
+                url: c.req.url,
+                path: c.req.path,
+                status: c.res.status,
+                duration: duration,
+                userAgent: c.req.header('user-agent'),
+            },
+        })
 
-    // 记录请求完成
-    logger.requestEnd({
-        status: c.res.status,
-        duration: `${duration}ms`,
-    })
+        // RESPONSE_FAIL：记录所有响应失败数据
+        if (c.res.status >= 400) {
+            let responseData: unknown = undefined
+            try {
+                const txt = await c.res.clone().text()
+                if (txt && txt.length <= 20_000) {
+                    try {
+                        responseData = JSON.parse(txt)
+                    } catch {
+                        responseData = txt
+                    }
+                }
+            } catch {
+                // ignore
+            }
+
+            logger.responseFail('Response failed', {
+                requestId,
+                userId: c.get('userId'),
+                ip: clientIP,
+                error: error instanceof Error
+                    ? { type: error.name, message: error.message, stack: error.stack }
+                    : (error ? { message: String(error) } : undefined),
+                context: {
+                    request_method: c.req.method,
+                    request_url: c.req.url,
+                    request_body: requestBody,
+                    header: {
+                        userAgent: c.req.header('user-agent'),
+                        referer: c.req.header('referer'),
+                        contentType,
+                        authorization: c.req.header('authorization') ? '***' : undefined,
+                    },
+                    response_status: c.res.status,
+                    response_data: redactSensitive(responseData),
+                },
+            })
+        }
+    }
 }

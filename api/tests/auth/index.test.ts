@@ -7,7 +7,7 @@ import {
     sendCodeUnit,
     frequentSendCodeUnit,
     registerWithOTPUnit,
-} from './unit.ts';
+} from '@tests/auth/unit.ts';
 
 
 Deno.test('从发验证码到注册用户`', async (t) => {

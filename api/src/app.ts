@@ -11,14 +11,14 @@ import { cors } from 'hono/cors';
 import { prettyJSON } from 'hono/pretty-json';
 
 // 导入路由
-import authRoutes from '@routes/auth.routes.ts';
-import userRoutes from '@routes/user.routes.ts';
+import authRoutes from '@/routes/auth.routes.ts';
+import userRoutes from '@/routes/user.routes.ts';
 
 // 导入错误处理
-import { registerErrorHandler } from '@lib/errors/error-handler.ts';
-import { logger } from './lib/logger.ts';
-import { checkSupabaseHealth } from './lib/supabase.client.ts';
-// import { requestLogger } from "@middlewares/request-logger.ts";
+import { registerErrorHandler } from '@/lib/errors/error-handler.ts';
+import { logger } from '@/lib/logger.ts';
+import { checkSupabaseHealth } from '@/lib/supabase.client.ts';
+import { requestLogger } from "@/middlewares/request-logger.ts";
 
 /**
  * Hono 应用实例
@@ -31,8 +31,10 @@ const app = new Hono();
 // ==================== 全局中间件 ====================
 
 // 请求日志中间件
+// - requestLogger：写入 api/logs/access/YYYY-MM-DD.log（JSON Lines）
+// - honoLogger：仅控制台输出（可按需保留）
+app.use('*', requestLogger);
 app.use('*', honoLogger());
-// app.use('*', requestLogger)
 
 /**
  * CORS 允许的来源列表

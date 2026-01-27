@@ -1,13 +1,27 @@
 // index.ts
-import { validateConfig, config } from './src/config/index.ts';
-import app from './src/app.ts';
+import { 
+  // setAppConfig, 
+  // setSupabaseConfig, 
+  // setAuthConfig, 
+  setBaseDir,
+  ValidateConfig, 
+  default as config,
+} from "@/config/index.ts";
+import { dirname, fromFileUrl } from "@std/path";
+
+// 应用参考路径（入口文件所在目录
+const basePath = Deno.env.get("APP_BASE_PATH") || dirname(fromFileUrl(import.meta.url)) || Deno.cwd();
+
+setBaseDir(basePath);
 
 // ✅ 启动时先验证配置
-validateConfig();
+ValidateConfig();
 
 const port = config.app.port;
 
 console.log(`🚀 Server running at http://localhost:${port}`);
 console.log(`📦 Environment: ${config.app.environment}`);
 
+// 注意：使用动态 import，确保 APP_BASE_DIR + config 先设置完成
+const { default: app } = await import("@/app.ts");
 Deno.serve({ port }, app.fetch);

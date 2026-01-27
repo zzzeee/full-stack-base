@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import { logger } from './logger.ts';
+import { logger } from '@/lib/logger.ts';
 
 /**
  * 邮件配置对象

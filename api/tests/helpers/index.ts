@@ -4,7 +4,7 @@
  * 提供通用的测试工具方法
  */
 
-import { TEST_CONFIG } from '../setup.ts';
+import { TEST_CONFIG } from '@tests/setup.ts';
 
 
 /**

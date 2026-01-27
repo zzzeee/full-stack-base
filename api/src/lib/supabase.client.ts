@@ -7,9 +7,9 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types.ts';
-import { config } from '@config/index.ts';
-import { logger } from './logger.ts';
-import { toError } from "../untils/error.ts";
+import config from '@/config/index.ts';
+import { logger } from '@/lib/logger.ts';
+import { toError } from "@/untils/error.ts";
 
 /**
  * 类型安全的 Supabase 客户端类型

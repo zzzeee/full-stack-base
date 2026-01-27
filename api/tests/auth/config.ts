@@ -6,7 +6,7 @@
 import {
     randomEmail, 
     randomPassword,
-} from '../helpers/index.ts';
+} from '@tests/helpers/index.ts';
 
 
 export const AUTH_CONF = {

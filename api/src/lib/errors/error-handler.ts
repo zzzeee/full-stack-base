@@ -6,9 +6,9 @@
  */
 
 import { Context, Hono } from '@hono/hono';
-import { AppError } from './app-error.ts';
+import { AppError } from '@/lib/errors/app-error.ts';
 import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '../api-response.ts';
+import { apiResponse } from '@/lib/api-response.ts';
 import { ContentfulStatusCode } from "@hono/hono/utils/http-status";
 
 /**
@@ -26,25 +26,53 @@ import { ContentfulStatusCode } from "@hono/hono/utils/http-status";
  */
 export const errorHandler = (err: Error, c: Context) => {
     // 1. 记录错误日志
+    const requestId = c.get('requestId');
+    const ip = c.get('clientIP');
+    const userId = c.get('userId');
+
     if (err instanceof AppError) {
         if (err.statusCode >= 500) {
             logger.error('Application error:', {
-                code: err.code,
-                message: err.message,
-                details: err.details,
-                stack: err.stack,
+                requestId,
+                userId,
+                ip,
+                error: {
+                    type: 'AppError',
+                    code: err.code,
+                    message: err.message,
+                    stack: err.stack,
+                },
+                context: {
+                    details: err.details,
+                    statusCode: err.statusCode,
+                },
             });
         } else {
             logger.warn('Client error:', {
-                code: err.code,
-                message: err.message,
+                requestId,
+                userId,
+                ip,
+                error: {
+                    type: 'AppError',
+                    code: err.code,
+                    message: err.message,
+                },
+                context: {
+                    statusCode: err.statusCode,
+                },
             });
         }
     } else {
         // 未预期的错误
         logger.error('Unexpected error:', {
-            message: err.message,
-            stack: err.stack,
+            requestId,
+            userId,
+            ip,
+            error: {
+                type: err.name || 'Error',
+                message: err.message,
+                stack: err.stack,
+            },
         });
     }
 

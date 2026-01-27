@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import { BaseRepository } from './base.repository.ts';
+import { BaseRepository } from '@/repositories/base.repository.ts';
 import { logger } from '@/lib/logger.ts';
 import type {
     VerificationCode,

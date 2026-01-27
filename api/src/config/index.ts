@@ -5,24 +5,73 @@
  * @createDate 2026-01-25
  */
 
-import { appConfig, validateAppConfig } from './app.config.ts';
-import { supabaseConfig, validateSupabaseConfig } from './supabase.config.ts';
-import { authConfig, validateAuthConfig } from './auth.config.ts';
+import type { 
+    FullConfig, 
+    AppEnvironment,
+    AppConfig,
+    SupabaseConfig,
+    AuthConfig,
+} from '@/types/config.types.ts';
+import { 
+    FormatAppConfig, 
+    ValidateAppConfig,
+} from '@/config/app.config.ts';
+import {
+    FormatSupabaseConfig,
+    ValidateSupabaseConfig,
+} from '@/config/supabase.config.ts';
+import {
+    FormatAuthConfig,
+    ValidateAuthConfig,
+} from '@/config/auth.config.ts';
+import type { LogLevelName } from '@/lib/logger.ts';
+
+const config: FullConfig = {
+    baseDir: Deno.env.get("BASE_DIR") || "./",
+    app: {
+        name: Deno.env.get("APP_NAME") || "My Project",
+        version: Deno.env.get("APP_VERSION") || "1.0.0",
+        port: parseInt(Deno.env.get("PORT") || "8000"),
+        timezone: Deno.env.get("TIMEZONE") || "UTC",
+        environment: Deno.env.get("ENVIRONMENT") as AppEnvironment || "development",
+        isDevelopment: Deno.env.get("ENVIRONMENT") === "development",
+        isProduction: Deno.env.get("ENVIRONMENT") === "production",
+        apiVersion: Deno.env.get("API_VERSION") || "v1",
+        apiPrefix: "/api",
+        corsOrigins: Deno.env.get("CORS_ORIGINS")?.split(",") || ["http://localhost:3000", "http://localhost:5173"],
+        logLevel: Deno.env.get("LOG_LEVEL") as LogLevelName | "INFO",
+        logDirName: Deno.env.get("LOG_DIR_NAME") || "logs",
+    },
+    supabase: {
+        url: Deno.env.get("SUPABASE_URL") || "",
+        anonKey: Deno.env.get("SUPABASE_ANON_KEY") || "",
+        serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+        jwtSecret: Deno.env.get("SUPABASE_JWT_SECRET") || "",
+    },
+    auth: {
+        jwtSecret: Deno.env.get("JWT_SECRET") || "",
+        jwtExpiresIn: parseInt(Deno.env.get("JWT_EXPIRES_IN") || "604800"),
+        jwtRefreshExpiresIn: parseInt(Deno.env.get("JWT_REFRESH_EXPIRES_IN") || "2592000"),
+        bcryptRounds: parseInt(Deno.env.get("BCRYPT_ROUNDS") || "10"),
+        sessionSecret: Deno.env.get("SESSION_SECRET") || "",
+    },
+};
 
 /**
- * 统一配置对象
- * 
- * @constant
- * @description 集中导出所有配置模块，包括应用配置、Supabase 配置和认证配置
+ * 构建配置（由入口传入运行时变量）
  */
-export const config = {
-    /** 应用基础配置 */
-    app: appConfig,
-    /** Supabase 数据库配置 */
-    supabase: supabaseConfig,
-    /** 认证相关配置 */
-    auth: authConfig,
-} as const;
+export function setBaseDir(dir: string): void {
+    config.baseDir = dir;
+}
+export function setAppConfig(conf: AppConfig): void {
+    config.app = FormatAppConfig(config, conf);
+}
+export function setSupabaseConfig(conf: SupabaseConfig): void {
+    config.supabase = FormatSupabaseConfig(config, conf);
+}
+export function setAuthConfig(conf: AuthConfig): void {
+    config.auth = FormatAuthConfig(config, conf);
+}
 
 /**
  * 验证所有配置
@@ -34,13 +83,13 @@ export const config = {
  * 
  * @example
  * // 在应用启动时调用
- * validateConfig();
+ * validateConfig(config);
  */
-export function validateConfig() {
+export function ValidateConfig() {
     try {
-        validateAppConfig();
-        validateSupabaseConfig();
-        validateAuthConfig();
+        ValidateAppConfig(config.app);
+        ValidateSupabaseConfig(config.supabase);
+        ValidateAuthConfig(config.auth);
 
         console.log('✅ Configuration validated successfully');
     } catch (error) {
@@ -49,5 +98,4 @@ export function validateConfig() {
     }
 }
 
-// 默认导出
 export default config;

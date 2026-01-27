@@ -7,7 +7,7 @@
 
 import { create, verify, getNumericDate } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
 import type { Payload } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
-import { logger } from './logger.ts';
+import { logger } from '@/lib/logger.ts';
 import type { JwtPayload } from '@/types/auth.types.ts';
 
 /**

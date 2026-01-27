@@ -12,13 +12,13 @@ import type {
     SuccessResponse as _SuccessResponse, 
     ErrorResponse as _ErrorResponse,
 } from '@/lib/api-response.ts';
-import { ErrorInfos, ErrorCodes } from '@lib/errors/error-codes.ts';
+import { ErrorInfos, ErrorCodes } from '@/lib/errors/error-codes.ts';
 import {
     SendVerificationCodeInput,
     VerificationCodeLoginInput,
     PasswordLoginInput,
-} from '@schemas/auth.schema.ts'
-import supabase from "@lib/supabase.client.ts";
+} from '@/schemas/auth.schema.ts'
+import supabase from "@/lib/supabase.client.ts";
 import type { LoginResponse } from '@/types/auth.types.ts';
 import { authService } from '@/services/auth.service.ts';
 import { generateToken } from '@/lib/jwt.ts';

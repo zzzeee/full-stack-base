@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import { ErrorCodes, GetErrorInfoByCode } from './error-codes.ts';
+import { ErrorCodes, GetErrorInfoByCode } from '@/lib/errors/error-codes.ts';
 
 /**
  * 应用错误基类

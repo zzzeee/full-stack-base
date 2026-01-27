@@ -54,6 +54,7 @@ Route → Handler → Service → Repository
 ```
 
 - **禁止跨层调用**
+- **引用只能使用别名**
 - 上层只能依赖下层，下层对上层无感知
 
 ---

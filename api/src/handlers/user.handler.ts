@@ -20,7 +20,7 @@ import {
     UpdateProfileInput,
     SendEmailVerificationCodeInput,
     ChangeEmailInput,
-} from '@schemas/user.schema.ts';
+} from '@/schemas/user.schema.ts';
 
 /**
  * 获取当前用户资料
