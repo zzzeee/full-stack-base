@@ -9,8 +9,10 @@ import type { Context } from '@hono/hono';
 import { logger } from '@/lib/logger.ts';
 import { apiResponse } from '@/lib/api-response.ts';
 import type { 
-    SuccessResponse as _SuccessResponse, 
-    ErrorResponse as _ErrorResponse,
+    // deno-lint-ignore no-unused-vars
+    SuccessResponse,
+    // deno-lint-ignore no-unused-vars
+    ErrorResponse, 
 } from '@/lib/api-response.ts';
 import { ErrorInfos, ErrorCodes } from '@/lib/errors/error-codes.ts';
 import {
@@ -30,7 +32,7 @@ import { userRepository } from '@/repositories/user.repository.ts';
  * 
  * @route POST /api/auth/send-code
  * @param {Context<{RequestBody: SendVerificationCodeInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<_SuccessResponse<null> | _ErrorResponse>>} JSON 响应
+ * @returns {Promise<Response<SuccessResponse<null> | ErrorResponse>>} JSON 响应
  * 
  * @description 使用 Supabase Auth 发送邮箱验证码
  */
@@ -68,7 +70,7 @@ export async function sendVerificationCode(c: Context) {
  * 
  * @route POST /api/auth/login/code
  * @param {Context<{RequestBody: VerificationCodeLoginInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<_SuccessResponse<LoginResponse> | _ErrorResponse>>} JSON 响应
+ * @returns {Promise<Response<SuccessResponse<LoginResponse> | ErrorResponse>>} JSON 响应
  * 
  * @description 使用 Supabase Auth 验证验证码并完成登录。如果验证成功，会自动在 public.users 表中创建用户。
  */
@@ -141,7 +143,7 @@ export async function loginWithVerificationCode(c: Context) {
  * 
  * @route POST /api/auth/login/password
  * @param {Context<{RequestBody: PasswordLoginInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<_SuccessResponse<LoginResponse> | _ErrorResponse>>} JSON 响应
+ * @returns {Promise<Response<SuccessResponse<LoginResponse> | ErrorResponse>>} JSON 响应
  * 
  * @description 使用 Supabase Auth 进行密码登录
  */
@@ -203,7 +205,7 @@ export async function loginWithPassword(c: Context) {
  * 
  * @route POST /api/auth/logout
  * @param {Context} c - Hono 上下文对象
- * @returns {Response<_SuccessResponse<null> | _ErrorResponse>} JSON 响应
+ * @returns {Response<SuccessResponse<null> | ErrorResponse>} JSON 响应
  * 
  * @description
  * 如果使用 JWT，客户端直接删除 Token 即可
