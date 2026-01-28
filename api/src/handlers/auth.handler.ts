@@ -6,25 +6,25 @@
  */
 
 import type { Context } from '@hono/hono';
-import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '@/lib/api-response.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { apiResponse } from '[@BASE]/lib/api-response.ts';
 import type { 
     // deno-lint-ignore no-unused-vars
     SuccessResponse,
     // deno-lint-ignore no-unused-vars
     ErrorResponse, 
-} from '@/lib/api-response.ts';
-import { ErrorInfos, ErrorCodes } from '@/lib/errors/error-codes.ts';
+} from '[@BASE]/lib/api-response.ts';
+import { ErrorInfos, ErrorCodes } from '[@BASE]/lib/errors/error-codes.ts';
 import {
     SendVerificationCodeInput,
     VerificationCodeLoginInput,
     PasswordLoginInput,
-} from '@/schemas/auth.schema.ts'
-import supabase from "@/lib/supabase.client.ts";
-import type { LoginResponse } from '@/types/auth.types.ts';
-import { authService } from '@/services/auth.service.ts';
-import { generateToken } from '@/lib/jwt.ts';
-import { userRepository } from '@/repositories/user.repository.ts';
+} from '[@BASE-schemas]/auth.schema.ts'
+import supabase from "[@BASE]/lib/supabase.client.ts";
+import type { LoginResponse } from '[@BASE]/types/auth.types.ts';
+import { authService } from '[@BASE-services]/auth.service.ts';
+import { generateToken } from '[@BASE]/lib/jwt.ts';
+import { userRepository } from '[@BASE-repositories]/user.repository.ts';
 
 
 /**

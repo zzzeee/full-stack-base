@@ -5,7 +5,7 @@
  * @createDate 2024-01-01
  */
 
-import { LoginForm } from '@/features/auth/components/login-form'
+import { LoginForm } from '[@BASE]/features/auth/components/login-form'
 
 /**
  * 登录页面组件

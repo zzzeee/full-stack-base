@@ -8,8 +8,8 @@ import {
     assertEquals,
     assertExists,
 } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { get, put } from '@tests/helpers/index.ts';
-import { authToken, testUser } from '@tests/integration/api/auth.test.ts';
+import { get, put } from '[@BASE-tests]/helpers/index.ts';
+import { authToken, testUser } from '[@BASE-tests]/integration/api/auth.test.ts';
 
 /**
  * 测试套件：用户接口

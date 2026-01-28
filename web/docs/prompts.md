@@ -269,7 +269,7 @@ export default function Page() {
 
 导入示例：
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mockFetchSuccess, mockAuthStorage } from '@tests/helpers/api-helpers'
+import { mockFetchSuccess, mockAuthStorage } from '[@BASE-tests]/helpers/api-helpers'
 ```
 
 ---

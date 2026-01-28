@@ -5,8 +5,8 @@
  * @createDate 2026-01-25
  */
 
-import { apiClient } from '@/lib/api/client'
-import { ENDPOINTS } from '@/lib/api/endpoints'
+import { apiClient } from '[@BASE]/lib/api/client'
+import { ENDPOINTS } from '[@BASE]/lib/api/endpoints'
 import type {
     UserProfile,
     UpdateProfileData,

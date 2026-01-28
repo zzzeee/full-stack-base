@@ -11,14 +11,14 @@ import { cors } from 'hono/cors';
 import { prettyJSON } from 'hono/pretty-json';
 
 // 导入路由
-import authRoutes from '@/routes/auth.routes.ts';
-import userRoutes from '@/routes/user.routes.ts';
+import authRoutes from '[@BASE-routes]/auth.routes.ts';
+import userRoutes from '[@BASE-routes]/user.routes.ts';
 
 // 导入错误处理
-import { registerErrorHandler } from '@/lib/errors/error-handler.ts';
-import { logger } from '@/lib/logger.ts';
-import { checkSupabaseHealth } from '@/lib/supabase.client.ts';
-import { requestLogger } from "@/middlewares/request-logger.ts";
+import { registerErrorHandler } from '[@BASE]/lib/errors/error-handler.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { checkSupabaseHealth } from '[@BASE]/lib/supabase.client.ts';
+import { requestLogger } from "[@BASE-middlewares]/request-logger.ts";
 
 /**
  * Hono 应用实例

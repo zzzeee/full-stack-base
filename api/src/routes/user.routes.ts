@@ -7,15 +7,15 @@
 
 import { Hono } from '@hono/hono';
 import { zValidator } from '@hono/zod-validator';
-import * as userHandler from '@/handlers/user.handler.ts';
+import * as userHandler from '[@BASE-handlers]/user.handler.ts';
 import {
     updateProfileSchema,
     updateAvatarSchema,
     changePasswordSchema,
     sendEmailVerificationCodeSchema,
     changeEmailSchema,
-} from '@/schemas/user.schema.ts';
-import { authMiddleware } from '@/middlewares/auth.middleware.ts';
+} from '[@BASE-schemas]/user.schema.ts';
+import { authMiddleware } from '[@BASE-middlewares]/auth.middleware.ts';
 
 /**
  * 用户路由实例

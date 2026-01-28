@@ -5,14 +5,14 @@
  * @createDate 2026-01-25
  */
 
-import { BaseRepository } from '@/repositories/base.repository.ts';
-import { logger } from '@/lib/logger.ts';
+import { BaseRepository } from '[@BASE-repositories]/base.repository.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
 import type {
     VerificationCode,
     VerificationCodeInsert,
     LoginLog,
     LoginLogInsert,
-} from '@/types/auth.types.ts';
+} from '[@BASE]/types/auth.types.ts';
 
 /**
  * 认证仓储类

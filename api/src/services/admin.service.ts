@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import { supabaseAdmin } from '@/lib/supabase.client.ts';
+import { supabaseAdmin } from '[@BASE]/lib/supabase.client.ts';
 
 /**
  * 管理员服务类

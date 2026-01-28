@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { apiClient, ApiClientError } from '@/lib/api/client'
-import { env } from '@/lib/constants/env'
+import { apiClient, ApiClientError } from '[@BASE]/lib/api/client'
+import { env } from '[@BASE]/lib/constants/env'
 import {
     mockFetchSuccess,
     mockFetchError,
@@ -14,7 +14,7 @@ import {
     mockUser,
     mockUsers,
     createSuccessResponse,
-} from '@tests/helpers/api-helpers'
+} from '[@BASE-tests]/helpers/api-helpers'
 
 describe('ApiClient', () => {
     beforeEach(() => {
@@ -294,12 +294,12 @@ describe('ApiClient', () => {
 
             try {
                 await apiClient.post('/users', {})
-            } catch (error) {
+            } catch (error: unknown) {
                 expect(error).toBeInstanceOf(ApiClientError)
                 if (error instanceof ApiClientError) {
-                    expect(error.message).toBe('Validation failed')
-                    expect(error.code).toBe('VALIDATION_ERROR')
-                    expect(error.status).toBe(400)
+                    expect((error as ApiClientError).message).toBe('Validation failed')
+                    expect((error as ApiClientError).code).toBe('VALIDATION_ERROR')
+                    expect((error as ApiClientError).status).toBe(400)
                 }
             }
         })

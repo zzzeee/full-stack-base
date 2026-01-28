@@ -6,7 +6,7 @@
  */
 
 import * as React from "react"
-import { cn } from "@/lib/utils/cn"
+import { cn } from "[@BASE]/lib/utils/cn"
 
 /**
  * 标签组件属性接口

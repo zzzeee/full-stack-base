@@ -6,7 +6,7 @@
  */
 
 import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
-import { logger } from '@/lib/logger.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
 
 /**
  * Bcrypt 加密轮数

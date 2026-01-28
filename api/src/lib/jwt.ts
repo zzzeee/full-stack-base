@@ -7,8 +7,8 @@
 
 import { create, verify, getNumericDate } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
 import type { Payload } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
-import { logger } from '@/lib/logger.ts';
-import type { JwtPayload } from '@/types/auth.types.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import type { JwtPayload } from '[@BASE]/types/auth.types.ts';
 
 /**
  * JWT 密钥，从环境变量读取

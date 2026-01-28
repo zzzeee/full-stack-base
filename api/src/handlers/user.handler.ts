@@ -6,24 +6,24 @@
  */
 
 import type { Context } from '@hono/hono';
-import { userService } from '@/services/user.service.ts';
-import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '@/lib/api-response.ts';
+import { userService } from '[@BASE-services]/user.service.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { apiResponse } from '[@BASE]/lib/api-response.ts';
 import type { 
     // deno-lint-ignore no-unused-vars
     SuccessResponse, 
     // deno-lint-ignore no-unused-vars
     ErrorResponse,
-} from '@/lib/api-response.ts';
+} from '[@BASE]/lib/api-response.ts';
 // deno-lint-ignore no-unused-vars
-import type { UserProfile } from '@/types/user.types.ts';
+import type { UserProfile } from '[@BASE]/types/user.types.ts';
 import {
     ChangePasswordInput,
     UpdateAvatarInput,
     UpdateProfileInput,
     SendEmailVerificationCodeInput,
     ChangeEmailInput,
-} from '@/schemas/user.schema.ts';
+} from '[@BASE-schemas]/user.schema.ts';
 
 /**
  * 获取当前用户资料

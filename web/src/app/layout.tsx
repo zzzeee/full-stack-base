@@ -7,8 +7,8 @@
 
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import "@/styles/globals.css"
-import { Header } from "@/components/layout/header"
+import "[@BASE]/styles/globals.css"
+import { Header } from "[@BASE]/components/layout/header"
 import { Toaster } from "sonner"
 
 /**

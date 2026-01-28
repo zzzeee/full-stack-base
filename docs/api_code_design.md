@@ -1,14 +1,13 @@
-# API 代码规范与项目结构指南（Deno + Hono）
+# API 项目设计及代码规范
 
-> 本文档用于统一 **Deno + Hono + Supabase Edge Functions** 项目的代码风格、分层职责与结构约定，作为团队协作与 AI 辅助编码的基础规范。
-
-核心目标：**结构清晰、职责单一、可测试、可长期维护**。
+> 本文档用于统一 **Deno + Hono + Supabase Edge Functions** 
+> 项目的代码风格、分层职责与结构约定，作为团队协作与 AI 辅助编码的基础规范。
 
 ---
 
 ## 一、总体设计原则（必须遵守）
 
-严格遵循以下调用方向（单向）：
+1. 严格遵循以下调用方向（单向）：
 
 ```
 Route → Handler → Service → Repository
@@ -23,6 +22,19 @@ Route → Handler → Service → Repository
 - handler 直接操作数据库
 - service 直接读取 ctx / request
 - repository 里写权限逻辑
+
+2. 别名约定
+
+在`deno.json`的`imports`有定义，除以下路径其他均使用 `[@BASE]/`，指向 `./src/`
+
+-  `[@BASE-handlers]/` 指向 `./src/handlers/`
+-  `[@BASE-middlewares]/` 指向 `./src/middlewares/`
+-  `[@BASE-repositories]/` 指向 `./src/repositories/`
+-  `[@BASE-routes]/` 指向 `./src/routes/`
+-  `[@BASE-services]/` 指向 `./src/services/`
+-  `[@BASE-schemas]/` 指向 `./src/schemas/`
+-  `[@BASE-tests]/` 指向 `./tests/`
+-  `[@BASE-scripts]/` 指向 `./scripts/`
 
 ---
 

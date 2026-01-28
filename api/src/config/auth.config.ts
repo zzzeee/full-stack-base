@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import type { FullConfig, AuthConfig } from '@/types/config.types.ts';
+import type { FullConfig, AuthConfig } from '[@BASE]/types/config.types.ts';
 
 export function FormatAuthConfig(config: FullConfig, newConf: AuthConfig): AuthConfig {
     return {

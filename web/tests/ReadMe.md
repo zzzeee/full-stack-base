@@ -115,7 +115,7 @@ npm run test:ui
 ```typescript
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { apiClient } from '@/lib/api/client'
-import { mockFetchSuccess } from '@tests/helpers/api-helpers'
+import { mockFetchSuccess } from '[@BASE-tests]/helpers/api-helpers'
 
 describe('你的功能', () => {
   beforeEach(() => {

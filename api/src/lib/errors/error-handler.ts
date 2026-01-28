@@ -6,9 +6,9 @@
  */
 
 import { Context, Hono } from '@hono/hono';
-import { AppError } from '@/lib/errors/app-error.ts';
-import { logger } from '@/lib/logger.ts';
-import { apiResponse } from '@/lib/api-response.ts';
+import { AppError } from '[@BASE]/lib/errors/app-error.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { apiResponse } from '[@BASE]/lib/api-response.ts';
 import { ContentfulStatusCode } from "@hono/hono/utils/http-status";
 
 /**

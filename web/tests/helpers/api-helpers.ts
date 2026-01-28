@@ -4,7 +4,7 @@
  */
 
 import { vi, expect } from 'vitest'
-import type { ApiResponse, ApiSuccess, ApiFailure, ApiMeta } from '@/lib/api/types'
+import type { ApiResponse, ApiSuccess, ApiFailure, ApiMeta } from '[@BASE]/lib/api/types'
 
 /**
  * 创建 mock Response 对象

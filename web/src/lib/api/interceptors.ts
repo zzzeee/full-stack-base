@@ -1,4 +1,4 @@
-import type { RequestConfig } from './types'
+import type { RequestConfig } from '[@BASE]/lib/api/types'
 import { toast } from 'sonner'
 
 /**

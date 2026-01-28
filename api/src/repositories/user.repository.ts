@@ -5,9 +5,9 @@
  * @createDate 2026-01-25
  */
 
-import { BaseRepository } from '@/repositories/base.repository.ts';
-import { logger } from '@/lib/logger.ts';
-import type { User, UserInsert, UserUpdate } from '@/types/user.types.ts';
+import { BaseRepository } from '[@BASE-repositories]/base.repository.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import type { User, UserInsert, UserUpdate } from '[@BASE]/types/user.types.ts';
 
 /**
  * 用户仓储类

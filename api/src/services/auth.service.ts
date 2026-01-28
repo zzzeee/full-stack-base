@@ -5,11 +5,11 @@
  * @createDate 2026-01-26
  */
 
-import { logger } from '@/lib/logger.ts';
-import { generateToken } from '@/lib/jwt.ts';
-import { UserRepository } from '@/repositories/user.repository.ts';
-import type { LoginResponse } from '@/types/auth.types.ts';
-import type { User } from '@/types/user.types.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { generateToken } from '[@BASE]/lib/jwt.ts';
+import { UserRepository } from '[@BASE-repositories]/user.repository.ts';
+import type { LoginResponse } from '[@BASE]/types/auth.types.ts';
+import type { User } from '[@BASE]/types/user.types.ts';
 
 /**
  * 确保 public.users 中存在对应用户（不存在则自动创建）

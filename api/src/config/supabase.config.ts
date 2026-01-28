@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import type { FullConfig, SupabaseConfig } from '@/types/config.types.ts';
+import type { FullConfig, SupabaseConfig } from '[@BASE]/types/config.types.ts';
 
 export function FormatSupabaseConfig(config: FullConfig, newConf: SupabaseConfig): SupabaseConfig {
     return {

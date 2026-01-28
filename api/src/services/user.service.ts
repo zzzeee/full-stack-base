@@ -5,15 +5,15 @@
  * @createDate 2026-01-25
  */
 
-import { userRepository } from '@/repositories/user.repository.ts';
-import { authRepository } from '@/repositories/auth.repository.ts';
-import { hashPassword, verifyPassword } from '@/lib/password.ts';
-import { logger } from '@/lib/logger.ts';
-import { AppError } from '@/lib/errors/app-error.ts';
-import { ErrorInfos, ErrorCodes } from '@/lib/errors/error-codes.ts';
-import { sendVerificationCodeEmail } from '@/lib/email.ts';
-import { VerificationPurpose } from '@/types/auth.types.ts';
-import type { UserProfile, UserUpdateData, ChangePasswordData } from '@/types/user.types.ts';
+import { userRepository } from '[@BASE-repositories]/user.repository.ts';
+import { authRepository } from '[@BASE-repositories]/auth.repository.ts';
+import { hashPassword, verifyPassword } from '[@BASE]/lib/password.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { AppError } from '[@BASE]/lib/errors/app-error.ts';
+import { ErrorInfos, ErrorCodes } from '[@BASE]/lib/errors/error-codes.ts';
+import { sendVerificationCodeEmail } from '[@BASE]/lib/email.ts';
+import { VerificationPurpose } from '[@BASE]/types/auth.types.ts';
+import type { UserProfile, UserUpdateData, ChangePasswordData } from '[@BASE]/types/user.types.ts';
 
 /**
  * 用户服务类

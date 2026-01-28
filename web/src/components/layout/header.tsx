@@ -11,8 +11,8 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { User, LogOut, Settings, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/features/auth/stores/auth.store"
+import { Button } from "[@BASE]/components/ui/button"
+import { useAuthStore } from "[@BASE]/features/auth/stores/auth.store"
 
 /**
  * 头部导航栏组件

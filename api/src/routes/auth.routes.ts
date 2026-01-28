@@ -7,13 +7,13 @@
 
 import { Hono } from '@hono/hono';
 import { zValidator } from '@hono/zod-validator';
-import * as authHandler from '@/handlers/auth.handler.ts';
+import * as authHandler from '[@BASE-handlers]/auth.handler.ts';
 import {
     sendVerificationCodeSchema,
     verificationCodeLoginSchema,
     passwordLoginSchema,
-} from '@/schemas/auth.schema.ts';
-import { authMiddleware } from '@/middlewares/auth.middleware.ts';
+} from '[@BASE-schemas]/auth.schema.ts';
+import { authMiddleware } from '[@BASE-middlewares]/auth.middleware.ts';
 
 /**
  * 认证路由实例

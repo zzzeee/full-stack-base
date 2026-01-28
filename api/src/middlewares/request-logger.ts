@@ -6,7 +6,7 @@
  */
 
 import { Context, Next } from '@hono/hono'
-import { logger } from '@/lib/logger.ts'
+import { logger } from '[@BASE]/lib/logger.ts'
 
 function redactSensitive(input: unknown): unknown {
     const SENSITIVE_KEYS = new Set([

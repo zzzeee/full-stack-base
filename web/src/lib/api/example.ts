@@ -3,9 +3,9 @@
  * 展示如何使用 apiClient、endpoints 和拦截器
  */
 
-import { apiClient } from '@/lib/api/client'
-import { ENDPOINTS } from '@/lib/api/endpoints'
-import type { ApiResponse } from '@/lib/api/types'
+import { apiClient } from '[@BASE]/lib/api/client'
+import { ENDPOINTS } from '[@BASE]/lib/api/endpoints'
+// import type { ApiResponse } from '[@BASE]/lib/api/client'
 
 // ============ 示例 1: 基础 GET 请求 ============
 async function getUsers() {

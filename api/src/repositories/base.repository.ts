@@ -5,10 +5,10 @@
  * @createDate 2026-01-25
  */
 
-import { supabase, supabaseAdmin } from '@/lib/supabase.client.ts';
-import { logger } from '@/lib/logger.ts';
+import { supabase, supabaseAdmin } from '[@BASE]/lib/supabase.client.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database.types.ts';
+import type { Database } from '[@BASE]/types/database.types.ts';
 
 // ==================== 类型定义 ====================
 

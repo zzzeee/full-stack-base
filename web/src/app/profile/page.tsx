@@ -13,18 +13,19 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { User, Mail, Lock, Edit2, Check, X, Camera } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "[@BASE]/components/ui/button"
+import { Input } from "[@BASE]/components/ui/input"
+import { Label } from "[@BASE]/components/ui/label"
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
-import { profileService, type UserProfile } from "@/features/profile"
-import { useAuthStore } from "@/features/auth/stores/auth.store"
+} from "[@BASE]/components/ui/card"
+import { profileService } from "[@BASE]/features/profile/services/profile.service"
+import type { UserProfile } from "[@BASE]/features/profile/types/profile.types"
+import { useAuthStore } from "[@BASE]/features/auth/stores/auth.store"
 import { toast } from "sonner"
 
 /**

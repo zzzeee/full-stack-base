@@ -1,8 +1,14 @@
 {
     "imports": {
-        "@/": "./src/",
-        "@tests/": "./tests/",
-        "@scripts/": "./scripts/",
+        "[@BASE]/": "./src/",
+        "[@BASE-handlers]/": "./src/handlers/",
+        "[@BASE-middlewares]/": "./src/middlewares/",
+        "[@BASE-repositories]/": "./src/repositories/",
+        "[@BASE-routes]/": "./src/routes/",
+        "[@BASE-services]/": "./src/services/",
+        "[@BASE-schemas]/": "./src/schemas/",
+        "[@BASE-tests]/": "./tests/",
+        "[@BASE-scripts]/": "./scripts/",
         "@hono/hono": "jsr:@hono/hono@^4.11.3",
         "@hono/hono/utils/http-status": "jsr:@hono/hono@^4.11.3/utils/http-status",
         "hono/factory": "jsr:@hono/hono@^4.11.3/factory",

@@ -24,18 +24,8 @@
         ],
         "baseUrl": ".",
         "paths": {
-            "@/*": [
-                "./src/*"
-            ],
-            "@/ui/*": [
-                "./src/components/ui/*"
-            ],
-            "@/utils/*": [
-                "./src/lib/utils/*"
-            ],
-            "@tests/*": [
-                "./tests/*"
-            ]
+            "[@BASE]/*": ["./src/*"],
+            "[@BASE-tests]/*": ["./tests/*"]
         }
     },
     "include": [
@@ -44,7 +34,9 @@
         "**/*.tsx",
         "**/*.mts",
         ".next/types/**/*.ts",
-        ".next/dev/types/**/*.ts"
-, "_vitest.config.mjs", "tests/debug.test.ts.rm"    ],
+        ".next/dev/types/**/*.ts", 
+        "_vitest.config.mjs", 
+        "tests/debug.test.ts.rm"
+    ],
     "exclude": ["node_modules", "*.rm"]
 }

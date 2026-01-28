@@ -11,20 +11,20 @@ import type {
     AppConfig,
     SupabaseConfig,
     AuthConfig,
-} from '@/types/config.types.ts';
+} from '[@BASE]/types/config.types.ts';
 import { 
     FormatAppConfig, 
     ValidateAppConfig,
-} from '@/config/app.config.ts';
+} from '[@BASE]/config/app.config.ts';
 import {
     FormatSupabaseConfig,
     ValidateSupabaseConfig,
-} from '@/config/supabase.config.ts';
+} from '[@BASE]/config/supabase.config.ts';
 import {
     FormatAuthConfig,
     ValidateAuthConfig,
-} from '@/config/auth.config.ts';
-import type { LogLevelName } from '@/lib/logger.ts';
+} from '[@BASE]/config/auth.config.ts';
+import type { LogLevelName } from '[@BASE]/lib/logger.ts';
 
 const config: FullConfig = {
     baseDir: Deno.env.get("BASE_DIR") || "./",

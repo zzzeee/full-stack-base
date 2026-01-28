@@ -4,8 +4,8 @@
  * 设置测试前后的钩子
  */
 
-import { logger } from '@/lib/logger.ts';
-import { User } from "@/types/user.types.ts";
+import { logger } from '[@BASE]/lib/logger.ts';
+import { User } from "[@BASE]/types/user.types.ts";
 
 // 设置测试环境变量
 Deno.env.set('ENVIRONMENT', 'test');

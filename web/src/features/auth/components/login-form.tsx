@@ -14,16 +14,16 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Mail, Lock, KeyRound, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "[@BASE]/components/ui/button"
+import { Input } from "[@BASE]/components/ui/input"
+import { Label } from "[@BASE]/components/ui/label"
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle
-} from "@/components/ui/card"
+} from "[@BASE]/components/ui/card"
 import { authService } from "../services/auth.service"
 import { useAuthStore } from "../stores/auth.store"
 

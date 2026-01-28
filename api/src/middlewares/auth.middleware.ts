@@ -6,9 +6,9 @@
  */
 
 import type { Context, Next } from '@hono/hono';
-import { verifyToken, extractTokenFromHeader } from '@/lib/jwt.ts';
-import { logger } from '@/lib/logger.ts';
-import { createAuthError } from '@/lib/errors/app-error.ts';
+import { verifyToken, extractTokenFromHeader } from '[@BASE]/lib/jwt.ts';
+import { logger } from '[@BASE]/lib/logger.ts';
+import { createAuthError } from '[@BASE]/lib/errors/app-error.ts';
 
 /**
  * JWT 认证中间件

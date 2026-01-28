@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { VerificationPurpose } from '@/types/auth.types.ts';
+import { VerificationPurpose } from '[@BASE]/types/auth.types.ts';
 
 /**
  * 发送验证码 Schema

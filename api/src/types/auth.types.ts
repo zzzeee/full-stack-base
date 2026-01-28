@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import type { Database } from '@/types/database.types.ts';
+import type { Database } from '[@BASE]/types/database.types.ts';
 
 
 /**

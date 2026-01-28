@@ -5,7 +5,7 @@
  * @createDate 2026-01-25
  */
 
-import type { FullConfig, AppConfig } from '@/types/config.types.ts';
+import type { FullConfig, AppConfig } from '[@BASE]/types/config.types.ts';
 
 export function FormatAppConfig(config: FullConfig, newConf: AppConfig): AppConfig {
     return {

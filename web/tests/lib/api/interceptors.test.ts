@@ -15,7 +15,7 @@ import {
     createMockResponse,
     mockAuthStorage,
     clearAuthStorage,
-} from '@tests/helpers/api-helpers'
+} from '[@BASE-tests]/helpers/api-helpers'
 
 describe('InterceptorManager', () => {
     let manager: InterceptorManager
