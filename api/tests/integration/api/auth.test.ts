@@ -9,7 +9,7 @@ import {
     assertExists,
 } from 'https://deno.land/std@0.208.0/assert/mod.ts';
 import { post, sleep, randomEmail, randomPassword } from '[@BASE-tests]/helpers/index.ts';
-import { authRepository } from '@repositories/auth.repository.ts'
+import { authRepository } from '[@BASE-repositories]/auth.repository.ts'
 
 // 测试用户数据
 const testUser = {

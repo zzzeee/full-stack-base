@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import config, { validateConfig } from "@config/index.ts";
+import config, { ValidateConfig } from "[@BASE]/config/index.ts";
 
 const createSupabaseClient = () => {
-    validateConfig()
+    ValidateConfig();
     return createClient(config.supabase.url, config.supabase.anonKey, {
         auth: {
             persistSession: false,

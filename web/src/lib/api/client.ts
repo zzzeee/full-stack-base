@@ -1,12 +1,12 @@
-import { env } from '@/lib/constants/env'
-import type { ApiResponse, RequestConfig } from './types'
+import { env } from '[@BASE]/lib/constants/env'
+import type { ApiResponse, RequestConfig } from '[@BASE]/lib/api/types'
 import {
     InterceptorManager,
     createDefaultRequestInterceptors,
     createDefaultResponseInterceptors,
     createDefaultErrorInterceptors,
     createTokenRefreshInterceptor,
-} from './interceptors'
+} from '[@BASE]/lib/api/interceptors'
 import { toast } from 'sonner'
 
 /**
