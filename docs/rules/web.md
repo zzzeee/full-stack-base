@@ -1,5 +1,12 @@
 # React 代码规范指南
 
+## 模块引用（必须）
+
+- 从 `src/` 引用的模块**统一使用** **`[@BASE]/`** 前缀（在 `web/tsconfig.json` 中映射到 `./src/*`），**禁止**用长串 `../../../` 跨目录引用。
+- 测试目录若已配置别名，使用 **`[@BASE-tests]/`** 指向 `tests/`。
+- 示例：`import { cn } from "[@BASE]/lib/utils/cn"`、`import { Button } from "[@BASE]/components/ui/button"`。
+
+---
 
 ## 总体代码风格（核心原则）
 

@@ -14,7 +14,8 @@
         "test:watch": "vitest watch",
         "test:coverage": "vitest run --coverage",
         "test:api": "vitest run tests/lib/api",
-        "test:api:watch": "vitest watch tests/lib/api"
+        "test:api:watch": "vitest watch tests/lib/api",
+        "scaffold:feature": "node scripts/scaffold-feature.mjs"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.2.2",

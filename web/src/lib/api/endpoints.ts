@@ -131,6 +131,12 @@ export const USER_ENDPOINTS = {
 
     /** 确认更换邮箱 */
     changeEmail: () => '/users/me/email',
+
+    /** 当前用户登录日志 */
+    myLoginLogs: (params?: { limit?: number }) =>
+        `/users/me/login-logs${buildQueryParams(
+            params?.limit != null ? { limit: params.limit } : undefined
+        )}`,
 } as const
 
 /**

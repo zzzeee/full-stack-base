@@ -1,5 +1,10 @@
 # React 项目结构
 
+## 路径别名
+
+- 源码 import 使用 **`[@BASE]/`** 映射到 `web/src/`（见 `web/tsconfig.json`），与团队约定及 Cursor 规则一致，**勿**用长相对路径跨 feature 引用。
+
+---
 
 ## 项目结构（简化示例）
 

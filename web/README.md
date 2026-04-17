@@ -26,3 +26,6 @@
 ## 结构约定
 
 详见 `docs/architecture/web.md`（`src/app`、`src/features/*`、`src/lib/*`）。
+
+- 约定式脚手架提示：`npm run scaffold:feature`（见 `scripts/scaffold-feature.mjs`）。
+- 本仓库示例模块：`src/features/settings/`（`/settings` 页面）、`src/features/auth/`、`src/features/profile/`。

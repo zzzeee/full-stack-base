@@ -1,5 +1,12 @@
 # API 项目代码规范
 
+## 模块引用（必须）
+
+- **`[@BASE]/`** 指向 `api/src/`（见 `api/deno.json` 的 `imports`）。
+- 分层别名：**`[@BASE-handlers]/`**、**`[@BASE-services]/`**、**`[@BASE-repositories]/`**、**`[@BASE-routes]/`**、**`[@BASE-schemas]/`**、**`[@BASE-middlewares]/`**、**`[@BASE-tests]/`**、**`[@BASE-scripts]/`** 按职责使用；未列出的路径仍用 **`[@BASE]/`**。
+- **禁止**用深层相对路径跨层引用；同目录可用 `./`。
+
+---
 
 ### 处理器层（handlers/）
 

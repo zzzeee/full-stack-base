@@ -12,3 +12,5 @@
 | [modules/supabase/](./modules/supabase/) | Supabase Auth 心智模型与 CLI 操作备忘 |
 
 **阅读顺序建议**：先读对应端的 `architecture`，再读 `rules`，需要查库/日志时再打开 `modules/`。
+
+**全仓库约定**：TypeScript 内引用项目源码时统一使用 **`[@BASE]/`**（及各端已配置的 `[@BASE-*]` 分层别名），详见 `rules/web.md`、`rules/api.md` 与根目录 `.cursor/rules/`。

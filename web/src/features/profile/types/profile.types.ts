@@ -92,3 +92,18 @@ export interface ChangeEmailData {
     new_email: string
     code: string
 }
+
+/**
+ * 登录日志行（与后端 login_logs 对齐的展示字段）
+ */
+export interface LoginLogRow {
+    id: string
+    created_at: string | null
+    login_method: string
+    status: string
+    email: string | null
+    ip_address: string | null
+    user_agent: string | null
+    device_type: string | null
+    failure_reason: string | null
+}

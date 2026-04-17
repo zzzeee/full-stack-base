@@ -1,0 +1,30 @@
+---
+description: 项目内 TypeScript 引用统一使用 [@BASE] 等别名前缀，禁止深层相对路径跨目录引用
+globs: "**/*.{ts,tsx,js,mjs}"
+alwaysApply: true
+---
+
+# 模块引用别名（[@BASE]）
+
+## 必须遵守
+
+- **业务与源码 import** 一律使用 **`[@BASE]/`** 前缀指向各子项目的 `src/` 根（见各端 `tsconfig.json` / `deno.json` 的 `paths` / `imports`），**不要**写 `../../../components/...` 这类跨层相对路径。
+- **Web（Next）**：`[@BASE]/` → `web/src/`；测试代码可使用 **`[@BASE-tests]/`** → `web/tests/`（若已配置）。
+- **API（Deno）**：除文档中约定的 **`[@BASE-handlers]/`**、**`[@BASE-services]/`** 等细分别名外，其余从 `src/` 出发的引用使用 **`[@BASE]/`**（例如 `[@BASE]/lib/logger.ts`）。
+
+## 示例
+
+```ts
+// Web
+import { Button } from "[@BASE]/components/ui/button";
+import { profileService } from "[@BASE]/features/profile/services/profile.service";
+
+// API
+import { logger } from "[@BASE]/lib/logger.ts";
+import { authService } from "[@BASE-services]/auth.service.ts";
+```
+
+## 例外
+
+- 同一目录或相邻文件的 **短相对路径**（如 `./types`）可接受。
+- 外部 npm / JSR 包使用包名，不适用本规则。

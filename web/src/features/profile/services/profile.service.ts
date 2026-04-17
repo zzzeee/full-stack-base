@@ -14,7 +14,8 @@ import type {
     ChangePasswordData,
     SendEmailCodeData,
     ChangeEmailData,
-} from '../types/profile.types'
+} from '[@BASE]/features/profile/types/profile.types'
+import type { LoginLogRow } from '[@BASE]/features/profile/types/profile.types'
 
 /** 合并同一时刻对 /users/me 的重复调用（Strict Mode 双调用、effect 重跑等） */
 let inflightMe: Promise<UserProfile> | null = null
@@ -139,6 +140,21 @@ class ProfileService {
         }
 
         return response.data
+    }
+
+    /**
+     * 当前账号登录日志
+     */
+    async getLoginLogs(limit = 50): Promise<LoginLogRow[]> {
+        const response = await apiClient.get<{ items: LoginLogRow[] }>(
+            ENDPOINTS.users.myLoginLogs({ limit }),
+        )
+
+        if (!response.success) {
+            throw new Error(response.error?.message || '获取登录日志失败')
+        }
+
+        return response.data.items
     }
 }
 

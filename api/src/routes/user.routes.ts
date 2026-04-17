@@ -38,6 +38,10 @@ users.use("*", authMiddleware);
 // GET /api/users/me
 users.get("/me", userHandler.getCurrentUser);
 
+// 当前用户登录日志（须在 /:id 之前注册）
+// GET /api/users/me/login-logs
+users.get("/me/login-logs", userHandler.getMyLoginLogs);
+
 // 更新当前用户资料
 // PUT /api/users/me
 users.put(
