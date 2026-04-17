@@ -2,6 +2,12 @@ import type { RequestConfig } from '[@BASE]/lib/api/types'
 import { toast } from 'sonner'
 
 /**
+ * 与后端 `ErrorCodes.AUTH_INVALID_CREDENTIALS` 一致。
+ * 登录接口在账号/密码错误时也会返回 HTTP 401，但不应按「未登录 / Token 失效」清 Session 并整页跳转。
+ */
+const AUTH_INVALID_CREDENTIALS_CODE = '10-0001'
+
+/**
  * 请求拦截器类型
  */
 export type RequestInterceptor = (
@@ -229,17 +235,18 @@ export const createDefaultResponseInterceptors = () => {
 export const createDefaultErrorInterceptors = () => {
     const interceptors: ErrorInterceptor[] = []
 
-    // 1. 401 未认证处理
+    // 1. 401：区分「登录页提交的错密」与「受保护接口的未登录/过期」
     interceptors.push((error) => {
         if (error?.status === 401) {
-            // 清除认证信息
+            const code = typeof error?.code === 'string' ? error.code : undefined
+            if (code === AUTH_INVALID_CREDENTIALS_CODE) {
+                throw error
+            }
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('auth-storage')
-                
-                // 显示错误提示
+
                 toast.error('登录已过期，请重新登录')
 
-                // 重定向到登录页
                 const currentPath = window.location.pathname
                 const redirectUrl = `/login?redirect=${encodeURIComponent(currentPath)}`
                 window.location.href = redirectUrl

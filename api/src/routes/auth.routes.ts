@@ -5,19 +5,20 @@
  * @createDate 2026-01-25
  */
 
-import { Hono } from '@hono/hono';
-import { zValidator } from '@hono/zod-validator';
-import * as authHandler from '[@BASE-handlers]/auth.handler.ts';
+import { Hono } from "@hono/hono";
+import { zValidator } from "@hono/zod-validator";
+import * as authHandler from "[@BASE-handlers]/auth.handler.ts";
 import {
-    sendVerificationCodeSchema,
-    verificationCodeLoginSchema,
-    passwordLoginSchema,
-} from '[@BASE-schemas]/auth.schema.ts';
-import { authMiddleware } from '[@BASE-middlewares]/auth.middleware.ts';
+  passwordLoginSchema,
+  sendVerificationCodeSchema,
+  verificationCodeLoginSchema,
+} from "[@BASE-schemas]/auth.schema.ts";
+import { authMiddleware } from "[@BASE-middlewares]/auth.middleware.ts";
+import { zodValidationHook } from "[@BASE-middlewares]/zod-validation.hook.ts";
 
 /**
  * 认证路由实例
- * 
+ *
  * @constant
  */
 const auth = new Hono();
@@ -29,25 +30,25 @@ const auth = new Hono();
 // 发送验证码
 // POST /api/auth/send-code
 auth.post(
-    '/send-code',
-    zValidator('json', sendVerificationCodeSchema),
-    authHandler.sendVerificationCode
+  "/send-code",
+  zValidator("json", sendVerificationCodeSchema, zodValidationHook),
+  authHandler.sendVerificationCode,
 );
 
 // 验证码登录
 // POST /api/auth/login/code
 auth.post(
-    '/login/code',
-    zValidator('json', verificationCodeLoginSchema),
-    authHandler.loginWithVerificationCode
+  "/login/code",
+  zValidator("json", verificationCodeLoginSchema, zodValidationHook),
+  authHandler.loginWithVerificationCode,
 );
 
 // 密码登录
 // POST /api/auth/login/password
 auth.post(
-    '/login/password',
-    zValidator('json', passwordLoginSchema),
-    authHandler.loginWithPassword
+  "/login/password",
+  zValidator("json", passwordLoginSchema, zodValidationHook),
+  authHandler.loginWithPassword,
 );
 
 /**
@@ -56,6 +57,6 @@ auth.post(
 
 // 退出登录
 // POST /api/auth/logout
-auth.post('/logout', authMiddleware, authHandler.logout);
+auth.post("/logout", authMiddleware, authHandler.logout);
 
 export default auth;

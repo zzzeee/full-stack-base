@@ -1,4 +1,4 @@
-# supabase操作
+# Supabase 基本操作
 
 
 ## CLI 安装

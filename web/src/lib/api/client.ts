@@ -7,7 +7,6 @@ import {
     createDefaultErrorInterceptors,
     createTokenRefreshInterceptor,
 } from '[@BASE]/lib/api/interceptors'
-import { toast } from 'sonner'
 
 /**
  * API 客户端错误类
@@ -301,14 +300,8 @@ class ApiClient {
                 } catch (interceptedError) {
                     lastError = interceptedError as Error
                 }
-                
-                // 如果是 ApiClientError，显示 toast 提示（错误拦截器可能已经处理了某些情况）
-                if (lastError instanceof ApiClientError && lastError.status !== 401 && lastError.status !== 403) {
-                    // 401 和 403 已经在错误拦截器中处理了 toast
-                    if (lastError.status !== 500 && lastError.status !== undefined && lastError.status < 500) {
-                        toast.error(lastError.message || '请求失败')
-                    }
-                }
+
+                // 不在此统一 toast：避免与页面/Service 内 catch 重复弹窗；401/403/5xx/网络仍由拦截器处理
 
                 // 最后一次重试也失败了
                 if (attempt === retry) {

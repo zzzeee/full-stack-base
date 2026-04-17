@@ -116,23 +116,24 @@ export default function ProfilePage() {
 
     /**
      * 检查认证状态（等待 Zustand 持久化加载完成）
+     *
+     * 不把 authUser / isAuthenticated 放进依赖：Zustand 每次可能产生新对象引用，导致 effect 无谓执行两次。
+     * 认证判断在 effect 内用 getState() 读取最新值即可。
      */
     useEffect(() => {
-        // 等待持久化加载完成
         if (!_hasHydrated) {
             return
         }
 
-        // 持久化加载完成后，检查认证状态
-        if (!authUser || !isAuthenticated) {
+        const { user, isAuthenticated: authed } = useAuthStore.getState()
+        if (!user || !authed) {
             router.push("/login")
             return
         }
 
-        // 已认证，加载用户资料
         loadProfile()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [_hasHydrated, authUser, isAuthenticated, router])
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在水合完成时拉取；避免 auth 引用抖动重复请求
+    }, [_hasHydrated, router])
 
     /**
      * 倒计时处理

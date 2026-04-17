@@ -33,7 +33,7 @@ import { useAuthStore } from "../stores/auth.store"
  */
 const passwordSchema = z.object({
     email: z.email("请输入有效的邮箱地址"),
-    password: z.string().min(6, "密码至少6位字符"),
+    password: z.string().min(8, "密码至少 8 个字符"),
 })
 
 /**

@@ -6,7 +6,7 @@
 > 结构目标：**按职责拆分，避免“所有东西塞 components”**。
 
 ```text
-apps/web/
+web/
 ├─ src/                              # 源代码根目录
 │  │
 │  ├─ app/                            # Next.js App Router（页面 & 路由）

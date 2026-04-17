@@ -15,52 +15,35 @@
 - 不包含复杂业务处理
 
 ```ts
-// auth.handler.ts
+// auth.handler.ts — handler 只解析输入、调 service、映射 HTTP；Supabase Auth 调用在 service → supabase-auth.repository
 /**
  * 验证码登录
- * 
  * @route POST /api/auth/login/code
- * @param {Context<{RequestBody: VerificationCodeLoginInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<_SuccessResponse<LoginResponse> | _ErrorResponse>>} JSON 响应
- * 
- * @description 使用 Supabase Auth 验证验证码并完成登录。如果验证成功，会自动在 public.users 表中创建用户。
  */
 export async function loginWithVerificationCode(c: Context) {
-    // 路由层已通过 zValidator 校验，这里直接取校验后的数据
     const body: VerificationCodeLoginInput = await c.req.json();
-    // 使用 Supabase Auth 验证验证码
-    const { data, error } = await supabase.auth.verifyOtp({
-        email: body.email,
-        token: body.code,
-        type: 'email',
-    });
+    const result = await authService.loginWithVerificationCode(body.email, body.code);
 
-    if (error) {
-        logger.error('supabase.auth.verifyOtp error:', {
-            email: body.email,
-            error: error.message,
-            errorCode: error.status,
-        });
-        const errorInfo = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
+    if (!result.ok) {
+        if (result.kind === "otp") {
+            const errorInfo = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
+            return c.json(
+                apiResponse.error(errorInfo.message, errorInfo.code, result.error),
+                errorInfo.status,
+            );
+        }
+        // …其它 kind：no_auth_user / sync，映射为统一错误响应
+        const errorInfo = ErrorInfos[ErrorCodes.INTERNAL_ERROR];
         return c.json(
-            apiResponse.error(errorInfo.message, errorInfo.code, error),
-            errorInfo.status
-        )
-    } else {
-        // 新用户自动注册成功
-        const user = await authService.ensurePublicUserExists({
-            id: data.user.id,
-            email: body.email,
-            emailVerified: true, // 验证码登录表示邮箱已验证
-        });
-
-        // 组装返回数据，并成功响应
-        const loginData = await authService.buildLoginResponse(user);
-        return c.json(
-            apiResponse.success<LoginResponse>(loginData, '登录成功'),
-            200
+            apiResponse.error("登录失败，请稍后重试", errorInfo.code),
+            errorInfo.status,
         );
     }
+
+    return c.json(
+        apiResponse.success<LoginResponse>(result.login, "登录成功"),
+        200,
+    );
 }
 ```
 

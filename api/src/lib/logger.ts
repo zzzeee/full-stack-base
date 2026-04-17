@@ -14,7 +14,7 @@
  * @description 定义日志的严重程度级别，数值越小级别越低
  */
 /**
- * 日志级别常量（按 docs/simple_log_design.md）
+ * 日志级别常量（按 docs/modules/logs.md）
  */
 export const LOG_LEVELS = {
     DEBUG: "DEBUG",
@@ -44,7 +44,7 @@ type LogData = Record<string, unknown>;
 
 /**
  * JSON 日志通用结构（必含字段）
- * - timestamp/level/requestId/message 对齐 docs/simple_log_design.md
+ * - timestamp/level/requestId/message 对齐 docs/modules/logs.md
  */
 export interface BaseLogEntry {
     timestamp: string; // ISO 8601 with timezone offset
@@ -320,7 +320,7 @@ class Logger {
     }
 
     /**
-     * RESPONSE_FAIL：专门记录所有响应失败数据（见 docs/simple_log_design.md）
+     * RESPONSE_FAIL：专门记录所有响应失败数据（见 docs/modules/logs.md）
      */
     responseFail(message: string, data?: LogData) {
         this.log("RESPONSE_FAIL", message, data);

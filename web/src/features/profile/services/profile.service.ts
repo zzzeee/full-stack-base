@@ -16,6 +16,9 @@ import type {
     ChangeEmailData,
 } from '../types/profile.types'
 
+/** 合并同一时刻对 /users/me 的重复调用（Strict Mode 双调用、effect 重跑等） */
+let inflightMe: Promise<UserProfile> | null = null
+
 /**
  * 个人中心服务类
  * 处理用户资料相关的API调用
@@ -23,18 +26,25 @@ import type {
 class ProfileService {
     /**
      * 获取当前用户资料
-     * 
+     *
      * @returns 用户资料
      * @throws {ApiClientError} 当请求失败时抛出错误
      */
     async getProfile(): Promise<UserProfile> {
-        const response = await apiClient.get<UserProfile>(ENDPOINTS.users.me())
+        if (!inflightMe) {
+            inflightMe = (async () => {
+                const response = await apiClient.get<UserProfile>(ENDPOINTS.users.me())
 
-        if (!response.success) {
-            throw new Error(response.error?.message || '获取用户资料失败')
+                if (!response.success) {
+                    throw new Error(response.error?.message || '获取用户资料失败')
+                }
+
+                return response.data
+            })().finally(() => {
+                inflightMe = null
+            })
         }
-
-        return response.data
+        return inflightMe
     }
 
     /**

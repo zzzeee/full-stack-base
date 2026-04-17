@@ -98,7 +98,7 @@ export function Header() {
 
                             {/* 下拉菜单 */}
                             {isMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-56 rounded-lg border bg-popover shadow-lg animate-in fade-in slide-in-from-top-1">
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border bg-popover shadow-lg animate-in fade-in slide-in-from-top-1">
                                     {/* 用户信息 */}
                                     <div className="px-4 py-3 border-b">
                                         <p className="text-sm font-medium">{user.name}</p>
