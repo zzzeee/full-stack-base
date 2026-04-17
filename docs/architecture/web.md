@@ -1,7 +1,9 @@
-# 架构设计
+# React 项目结构
 
 
-# Web 项目结构
+## 项目结构（简化示例）
+
+> 结构目标：**按职责拆分，避免“所有东西塞 components”**。
 
 ```text
 apps/web/
@@ -129,16 +131,12 @@ apps/web/
 └─ README.md
 ```
 
----
-
-# 🎯 优化亮点
-
-## 1. 使用 `src/` 目录
+### 1. 使用 `src/` 目录
 
 - 将所有源代码放入 src/ 目录，与配置文件分离
 - 让项目根目录更整洁
 
-## 2. 路由组（Route Groups）
+### 2. 路由组（Route Groups）
 
 ```text
 (auth)/    # 认证相关页面（共享布局）
@@ -148,7 +146,7 @@ apps/web/
 - 使用括号创建路由组，不影响 URL 路径
 - 每个组可以有独立的 layout.tsx
 
-## 3. Feature-Sliced 模块化
+### 3. Feature-Sliced 模块化
 
 每个功能模块包含：
 ```text
@@ -158,78 +156,13 @@ features/auth/
 ├─ stores/        # 状态管理
 ├─ types/         # 类型定义
 └─ index.ts       # 统一导出
-```
-
-## 4. 清晰的组件分层
-
-```text
-components/
-├─ ui/           # 纯 UI 组件（无业务逻辑）
-├─ layout/       # 布局组件
-└─ shared/       # 共享业务组件
-```
-
-## 5. 更好的 lib 组织
-
-```text
-lib/
-├─ api/          # API 相关封装
-├─ db/           # 数据库客户端
-├─ utils/        # 工具函数（细分）
-├─ hooks/        # 全局 hooks
-└─ constants/    # 常量配置
-```
-
-## 6. 完善的特性支持
-
-- ✅ 加载状态（loading.tsx）
-- ✅ 错误处理（error.tsx）
-- ✅ 404 页面（not-found.tsx）
-- ✅ 中间件（鉴权、重定向）
-- ✅ 测试目录
-
-
-## 📝 使用建议
-
-### 导入路径配置（tsconfig.json）
-
-```json
-{
-    "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["./src/*"],
-            "@/components/*": ["./src/components/*"],
-            "@/features/*": ["./src/features/*"],
-            "@/lib/*": ["./src/lib/*"],
-            "@/types/*": ["./src/types/*"]
-        }
-    }
-}
-```
-
-### 使用示例
-
-```tsx
-// ✅ 推荐
-import { Button } from '@/components/ui'
-import { useAuth } from '@/features/auth'
-import { apiClient } from '@/lib/api/client'
-
-// ❌ 避免
-import { Button } from '../../../components/ui/button'
-```
-
-### 环境变量类型安全
-
-```typescript
-// lib/constants/env.ts
-export const env = {
-    apiUrl: process.env.NEXT_PUBLIC_API_URL!,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-} as const;
-```
 
 ---
 
-这个结构遵循了 Next.js 最佳实践，同时借鉴了 Feature-Sliced Design 架构思想，适合中大型项目！
+## 五、与 AI 协作的约定（重要）
+
+- AI 生成代码必须：
+  - 遵循本规范
+  - 包含必要注释
+  - 避免过度封装和炫技写法
+- AI 生成的复杂逻辑，**必须可人工维护**
