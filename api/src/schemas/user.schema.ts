@@ -15,7 +15,7 @@ import { z } from 'zod';
  * 
  * @property {string} [name] - 用户名称，长度 2-50 字符，会自动去除首尾空格（可选）
  * @property {string} [bio] - 个人简介，最多 500 字符，会自动去除首尾空格（可选）
- * @property {string} [phone] - 手机号，必须是有效的中国手机号格式，或空字符串（可选）
+ * @property {string} [phone] - 手机号（写入 auth.users.phone），中国 11 位或空字符串清空
  */
 export const updateProfileSchema = z.object({
     name: z
@@ -100,44 +100,13 @@ export const changePasswordSchema = z.object({
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 /**
- * 发送邮箱验证码 Schema（用于更换邮箱）
- * 
- * @constant
- * @description 验证发送邮箱验证码请求的数据格式
- * 
- * @property {string} new_email - 新邮箱地址，必须是有效的邮箱格式
- */
-export const sendEmailVerificationCodeSchema = z.object({
-    new_email: z
-        .string()
-        .email('邮箱格式不正确')
-        .min(1, '邮箱不能为空'),
-});
-
-/**
- * 发送邮箱验证码输入类型
- * 
- * @typedef {z.infer<typeof sendEmailVerificationCodeSchema>} SendEmailVerificationCodeInput
- */
-export type SendEmailVerificationCodeInput = z.infer<typeof sendEmailVerificationCodeSchema>;
-
-/**
- * 确认更换邮箱 Schema
- * 
- * @constant
- * @description 验证确认更换邮箱请求的数据格式
- * 
- * @property {string} new_email - 新邮箱地址，必须是有效的邮箱格式
- * @property {string} code - 验证码，必须是6位数字
+ * 更换邮箱 Schema（由 Supabase Auth 发确认邮件，不再使用自建验证码表）
  */
 export const changeEmailSchema = z.object({
     new_email: z
         .string()
         .email('邮箱格式不正确')
         .min(1, '邮箱不能为空'),
-    code: z
-        .string()
-        .regex(/^\d{6}$/, '验证码必须是6位数字'),
 });
 
 /**

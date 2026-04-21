@@ -245,27 +245,6 @@ export default function ProfilePage() {
                             </p>
                         )}
                     </div>
-
-                    <div className="space-y-2">
-                        <Label>邮箱</Label>
-                        <div className="flex items-center justify-between p-3 border rounded-lg gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                                <span className="truncate">{profile.email}</span>
-                                {profile.email_verified ? (
-                                    <span className="text-xs text-green-600 shrink-0">已验证</span>
-                                ) : (
-                                    <span className="text-xs text-yellow-600 shrink-0">未验证</span>
-                                )}
-                            </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            更换邮箱、手机或密码请前往{" "}
-                            <Link href="/settings" className="underline text-primary">
-                                设置 → 安全
-                            </Link>
-                        </p>
-                    </div>
                 </CardContent>
             </Card>
         </div>

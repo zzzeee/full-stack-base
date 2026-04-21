@@ -24,12 +24,7 @@ export class AdminService {
      * @description 使用 Admin 客户端可以删除任何用户（绕过 RLS）
      */
     async deleteUser(userId: string) {
-        // 使用 Admin 客户端可以删除任何用户
-        const { error } = await supabaseAdmin
-            .from('users')
-            .delete()
-            .eq('id', userId);
-
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
         if (error) throw error;
     }
 }

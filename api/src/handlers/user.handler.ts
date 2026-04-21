@@ -1,30 +1,21 @@
 /**
  * @file user.handler.ts
  * @description 用户请求处理器，通过 Service 层处理业务逻辑
- * @author System
- * @createDate 2026-01-25
  */
 
 import type { Context } from "@hono/hono";
 import { userService } from "[@BASE-services]/user.service.ts";
 import { logger } from "[@BASE]/lib/logger.ts";
 import { apiResponse } from "[@BASE]/lib/api-response.ts";
-import {
+import type {
   ChangeEmailInput,
   ChangePasswordInput,
-  SendEmailVerificationCodeInput,
   UpdateAvatarInput,
   UpdateProfileInput,
 } from "[@BASE-schemas]/user.schema.ts";
 
 /**
- * 获取当前用户资料
- *
  * @route GET /api/users/me
- * @param {Context} c - Hono 上下文对象
- * @returns {Promise<Response<SuccessResponse<UserProfile> | ErrorResponse>>} JSON 响应
- *
- * @description 从认证中间件获取 userId，返回当前登录用户的资料
  */
 export async function getCurrentUser(c: Context) {
   const userId = c.get("userId");
@@ -35,11 +26,7 @@ export async function getCurrentUser(c: Context) {
 }
 
 /**
- * 更新用户资料
- *
  * @route PUT /api/users/me
- * @param {Context<{RequestBody: UpdateProfileInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<SuccessResponse<_UserProfile> | ErrorResponse>>} JSON 响应
  */
 export async function updateProfile(c: Context) {
   const userId = c.get("userId");
@@ -53,11 +40,7 @@ export async function updateProfile(c: Context) {
 }
 
 /**
- * 更新头像
- *
  * @route PUT /api/users/me/avatar
- * @param {Context<{RequestBody: UpdateAvatarInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<SuccessResponse<{ avatar_url: string }> | ErrorResponse>>} JSON 响应
  */
 export async function updateAvatar(c: Context) {
   const userId = c.get("userId");
@@ -74,11 +57,7 @@ export async function updateAvatar(c: Context) {
 }
 
 /**
- * 修改密码
- *
  * @route PUT /api/users/me/password
- * @param {Context<{RequestBody: ChangePasswordInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<SuccessResponse<null> | ErrorResponse>>} JSON 响应
  */
 export async function changePassword(c: Context) {
   const userId = c.get("userId");
@@ -92,12 +71,7 @@ export async function changePassword(c: Context) {
 }
 
 /**
- * 获取用户公开资料（通过用户 ID）
- *
  * @route GET /api/users/:id
- * @param {Context} c - Hono 上下文对象
- * @param {string} id - 用户 ID（从路由参数获取）
- * @returns {Promise<Response<SuccessResponse<Partial<UserProfile>> | ErrorResponse>>} JSON 响应
  */
 export async function getUserById(c: Context) {
   const userId = c.req.param("id");
@@ -108,58 +82,16 @@ export async function getUserById(c: Context) {
 }
 
 /**
- * 当前用户登录日志
- *
- * @route GET /api/users/me/login-logs
- */
-export async function getMyLoginLogs(c: Context) {
-  const userId = c.get("userId");
-  const limitRaw = c.req.query("limit");
-  const limit = Math.min(
-    100,
-    Math.max(1, Number(limitRaw) || 50),
-  );
-
-  const items = await userService.getMyLoginLogs(userId, limit);
-
-  return c.json(apiResponse.success({ items }), 200);
-}
-
-/**
- * 发送邮箱验证码（用于更换邮箱）
- *
- * @route POST /api/users/me/email/send-code
- * @param {Context<{RequestBody: SendEmailVerificationCodeInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<SuccessResponse<null> | ErrorResponse>>} JSON 响应
- */
-export async function sendEmailVerificationCode(c: Context) {
-  const userId = c.get("userId");
-  const body: SendEmailVerificationCodeInput = await c.req.json();
-
-  await userService.sendEmailVerificationCode(userId, body.new_email);
-
-  logger.info("Email verification code sent via handler", { userId });
-
-  return c.json(
-    apiResponse.success(null, "验证码已发送到新邮箱"),
-    200,
-  );
-}
-
-/**
- * 确认更换邮箱
- *
  * @route PUT /api/users/me/email
- * @param {Context<{RequestBody: ChangeEmailInput}>} c - Hono 上下文对象
- * @returns {Promise<Response<SuccessResponse<{ email: string; email_verified: boolean }> | ErrorResponse>>} JSON 响应
+ * @description 由 Supabase Auth 处理换绑流程（确认邮件等），不再使用自建验证码表
  */
 export async function changeEmail(c: Context) {
   const userId = c.get("userId");
   const body: ChangeEmailInput = await c.req.json();
 
-  const profile = await userService.changeEmail(userId, body.new_email, body.code);
+  const profile = await userService.changeEmail(userId, body.new_email);
 
-  logger.info("User email changed via handler", { userId });
+  logger.info("User email change requested via handler", { userId });
 
   return c.json(
     apiResponse.success(
@@ -167,7 +99,7 @@ export async function changeEmail(c: Context) {
         email: profile.email,
         email_verified: profile.email_verified,
       },
-      "邮箱更换成功，请验证新邮箱",
+      "已提交新邮箱，请按 Supabase Auth 邮件完成确认",
     ),
     200,
   );

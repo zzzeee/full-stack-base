@@ -1,8 +1,6 @@
 /**
  * @file profile.service.ts
  * @description 个人中心服务，处理用户资料相关的API调用
- * @author System
- * @createDate 2026-01-25
  */
 
 import { apiClient } from '[@BASE]/lib/api/client'
@@ -12,25 +10,13 @@ import type {
     UpdateProfileData,
     UpdateAvatarData,
     ChangePasswordData,
-    SendEmailCodeData,
     ChangeEmailData,
 } from '[@BASE]/features/profile/types/profile.types'
-import type { LoginLogRow } from '[@BASE]/features/profile/types/profile.types'
 
 /** 合并同一时刻对 /users/me 的重复调用（Strict Mode 双调用、effect 重跑等） */
 let inflightMe: Promise<UserProfile> | null = null
 
-/**
- * 个人中心服务类
- * 处理用户资料相关的API调用
- */
 class ProfileService {
-    /**
-     * 获取当前用户资料
-     *
-     * @returns 用户资料
-     * @throws {ApiClientError} 当请求失败时抛出错误
-     */
     async getProfile(): Promise<UserProfile> {
         if (!inflightMe) {
             inflightMe = (async () => {
@@ -48,13 +34,6 @@ class ProfileService {
         return inflightMe
     }
 
-    /**
-     * 更新用户资料
-     * 
-     * @param data - 更新数据
-     * @returns 更新后的用户资料
-     * @throws {ApiClientError} 当请求失败时抛出错误
-     */
     async updateProfile(data: UpdateProfileData): Promise<UserProfile> {
         const response = await apiClient.put<UserProfile>(
             ENDPOINTS.users.updateMe(),
@@ -68,13 +47,6 @@ class ProfileService {
         return response.data
     }
 
-    /**
-     * 更新用户头像
-     * 
-     * @param data - 头像数据
-     * @returns 更新后的头像URL
-     * @throws {ApiClientError} 当请求失败时抛出错误
-     */
     async updateAvatar(data: UpdateAvatarData): Promise<string> {
         const response = await apiClient.put<{ avatar_url: string }>(
             ENDPOINTS.users.updateMyAvatar(),
@@ -88,12 +60,6 @@ class ProfileService {
         return response.data.avatar_url
     }
 
-    /**
-     * 修改密码
-     * 
-     * @param data - 密码数据
-     * @throws {ApiClientError} 当请求失败时抛出错误
-     */
     async changePassword(data: ChangePasswordData): Promise<void> {
         const response = await apiClient.put<void>(
             ENDPOINTS.users.changeMyPassword(),
@@ -105,31 +71,9 @@ class ProfileService {
         }
     }
 
-    /**
-     * 发送邮箱验证码（用于更换邮箱）
-     * 
-     * @param data - 邮箱数据
-     * @throws {ApiClientError} 当请求失败时抛出错误
-     */
-    async sendEmailCode(data: SendEmailCodeData): Promise<void> {
-        const response = await apiClient.post<void>(
-            ENDPOINTS.users.sendEmailCode(),
-            data
-        )
-
-        if (!response.success) {
-            throw new Error(response.error?.message || '发送验证码失败')
-        }
-    }
-
-    /**
-     * 更换邮箱
-     * 
-     * @param data - 邮箱和验证码数据
-     * @returns 更新后的邮箱信息
-     * @throws {ApiClientError} 当请求失败时抛出错误
-     */
-    async changeEmail(data: ChangeEmailData): Promise<{ email: string; email_verified: boolean }> {
+    async changeEmail(
+        data: ChangeEmailData
+    ): Promise<{ email: string; email_verified: boolean }> {
         const response = await apiClient.put<{ email: string; email_verified: boolean }>(
             ENDPOINTS.users.changeEmail(),
             data
@@ -140,21 +84,6 @@ class ProfileService {
         }
 
         return response.data
-    }
-
-    /**
-     * 当前账号登录日志
-     */
-    async getLoginLogs(limit = 50): Promise<LoginLogRow[]> {
-        const response = await apiClient.get<{ items: LoginLogRow[] }>(
-            ENDPOINTS.users.myLoginLogs({ limit }),
-        )
-
-        if (!response.success) {
-            throw new Error(response.error?.message || '获取登录日志失败')
-        }
-
-        return response.data.items
     }
 }
 

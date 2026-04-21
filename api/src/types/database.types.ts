@@ -34,172 +34,36 @@ export type Database = {
     }
     public: {
         Tables: {
-            email_verification_codes: {
-                Row: {
-                    attempts: number | null
-                    code: string
-                    created_at: string | null
-                    email: string
-                    expires_at: string
-                    id: string
-                    ip_address: unknown
-                    is_used: boolean | null
-                    purpose: string
-                    used_at: string | null
-                    user_agent: string | null
-                    user_id: string | null
-                }
-                Insert: {
-                    attempts?: number | null
-                    code: string
-                    created_at?: string | null
-                    email: string
-                    expires_at: string
-                    id?: string
-                    ip_address?: unknown
-                    is_used?: boolean | null
-                    purpose: string
-                    used_at?: string | null
-                    user_agent?: string | null
-                    user_id?: string | null
-                }
-                Update: {
-                    attempts?: number | null
-                    code?: string
-                    created_at?: string | null
-                    email?: string
-                    expires_at?: string
-                    id?: string
-                    ip_address?: unknown
-                    is_used?: boolean | null
-                    purpose?: string
-                    used_at?: string | null
-                    user_agent?: string | null
-                    user_id?: string | null
-                }
-                Relationships: [
-                    {
-                        foreignKeyName: "email_verification_codes_user_id_fkey"
-                        columns: ["user_id"]
-                        isOneToOne: false
-                        referencedRelation: "users"
-                        referencedColumns: ["id"]
-                    },
-                ]
-            }
-            login_logs: {
-                Row: {
-                    browser: string | null
-                    city: string | null
-                    country: string | null
-                    created_at: string | null
-                    device_name: string | null
-                    device_type: string | null
-                    email: string | null
-                    failure_reason: string | null
-                    id: string
-                    ip_address: unknown
-                    login_method: string
-                    metadata: Json | null
-                    os: string | null
-                    region: string | null
-                    status: string
-                    user_agent: string | null
-                    user_id: string | null
-                }
-                Insert: {
-                    browser?: string | null
-                    city?: string | null
-                    country?: string | null
-                    created_at?: string | null
-                    device_name?: string | null
-                    device_type?: string | null
-                    email?: string | null
-                    failure_reason?: string | null
-                    id?: string
-                    ip_address: unknown
-                    login_method: string
-                    metadata?: Json | null
-                    os?: string | null
-                    region?: string | null
-                    status: string
-                    user_agent?: string | null
-                    user_id?: string | null
-                }
-                Update: {
-                    browser?: string | null
-                    city?: string | null
-                    country?: string | null
-                    created_at?: string | null
-                    device_name?: string | null
-                    device_type?: string | null
-                    email?: string | null
-                    failure_reason?: string | null
-                    id?: string
-                    ip_address?: unknown
-                    login_method?: string
-                    metadata?: Json | null
-                    os?: string | null
-                    region?: string | null
-                    status?: string
-                    user_agent?: string | null
-                    user_id?: string | null
-                }
-                Relationships: [
-                    {
-                        foreignKeyName: "login_logs_user_id_fkey"
-                        columns: ["user_id"]
-                        isOneToOne: false
-                        referencedRelation: "users"
-                        referencedColumns: ["id"]
-                    },
-                ]
-            }
-            users: {
+            profiles: {
                 Row: {
                     avatar_url: string | null
                     bio: string | null
-                    created_at: string | null
-                    email: string
-                    email_verified: boolean | null
+                    created_at: string
                     id: string
-                    last_login_at: string | null
-                    metadata: Json | null
+                    metadata: Json
                     name: string
-                    password_hash: string | null
-                    phone: string | null
-                    status: string | null
-                    updated_at: string | null
+                    status: string
+                    updated_at: string
                 }
                 Insert: {
                     avatar_url?: string | null
                     bio?: string | null
-                    created_at?: string | null
-                    email: string
-                    email_verified?: boolean | null
-                    id?: string
-                    last_login_at?: string | null
-                    metadata?: Json | null
-                    name: string
-                    password_hash?: string | null
-                    phone?: string | null
-                    status?: string | null
-                    updated_at?: string | null
+                    created_at?: string
+                    id: string
+                    metadata?: Json
+                    name?: string
+                    status?: string
+                    updated_at?: string
                 }
                 Update: {
                     avatar_url?: string | null
                     bio?: string | null
-                    created_at?: string | null
-                    email?: string
-                    email_verified?: boolean | null
+                    created_at?: string
                     id?: string
-                    last_login_at?: string | null
-                    metadata?: Json | null
+                    metadata?: Json
                     name?: string
-                    password_hash?: string | null
-                    phone?: string | null
-                    status?: string | null
-                    updated_at?: string | null
+                    status?: string
+                    updated_at?: string
                 }
                 Relationships: []
             }
@@ -208,24 +72,7 @@ export type Database = {
             [_ in never]: never
         }
         Functions: {
-            cleanup_expired_verification_codes: { Args: never; Returns: undefined }
             current_user_id: { Args: never; Returns: string }
-            detect_suspicious_login: {
-                Args: { p_country: string; p_ip_address: unknown; p_user_id: string }
-                Returns: boolean
-            }
-            get_user_recent_logins: {
-                Args: { p_limit?: number; p_user_id: string }
-                Returns: {
-                    created_at: string
-                    device_type: string
-                    id: string
-                    ip_address: unknown
-                    location: string
-                    login_method: string
-                    status: string
-                }[]
-            }
             is_admin: { Args: never; Returns: boolean }
             is_email_verified: { Args: never; Returns: boolean }
         }
@@ -363,4 +210,3 @@ export const Constants = {
         Enums: {},
     },
 } as const
-

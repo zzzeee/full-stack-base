@@ -1,70 +1,63 @@
 /**
  * @file user.service.ts
- * @description 用户业务逻辑层，处理用户相关的核心业务逻辑
- * @author System
- * @createDate 2026-01-25
+ * @description 用户业务逻辑层（profiles + Supabase Auth）
  */
 
 import { userRepository } from "[@BASE-repositories]/user.repository.ts";
-import { authRepository } from "[@BASE-repositories]/auth.repository.ts";
-import { hashPassword, verifyPassword } from "[@BASE]/lib/password.ts";
+import { supabaseAuthRepository } from "[@BASE-repositories]/supabase-auth.repository.ts";
 import { logger } from "[@BASE]/lib/logger.ts";
 import { AppError } from "[@BASE]/lib/errors/app-error.ts";
 import { ErrorCodes, ErrorInfos } from "[@BASE]/lib/errors/error-codes.ts";
-import { sendVerificationCodeEmail } from "[@BASE]/lib/email.ts";
-import { type LoginLog, VerificationPurpose } from "[@BASE]/types/auth.types.ts";
-import type { ChangePasswordData, UserProfile, UserUpdateData } from "[@BASE]/types/user.types.ts";
+import type {
+  ChangePasswordData,
+  Profile,
+  UserProfile,
+  UserUpdateData,
+} from "[@BASE]/types/user.types.ts";
 
-/**
- * 用户服务类
- *
- * @class
- * @description 提供用户相关的业务逻辑方法，包括资料查询、更新、密码修改等
- */
+function toUserProfile(
+  row: Profile,
+  authUser: NonNullable<
+    Awaited<ReturnType<typeof supabaseAuthRepository.getUserById>>["data"]["user"]
+  >,
+): UserProfile {
+  return {
+    id: row.id,
+    email: authUser.email ?? "",
+    name: row.name,
+    avatar_url: row.avatar_url,
+    bio: row.bio,
+    phone: authUser.phone ?? null,
+    phone_verified: authUser.phone_confirmed_at != null,
+    status: row.status,
+    email_verified: authUser.email_confirmed_at != null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    last_login_at: authUser.last_sign_in_at ?? null,
+  };
+}
+
 export class UserService {
-  /**
-   * 获取用户资料
-   *
-   * @param {string} userId - 用户 ID
-   * @returns {Promise<UserProfile>} 用户资料（不包含敏感信息）
-   * @throws {AppError} 当用户不存在时抛出错误
-   */
   async getUserProfile(userId: string): Promise<UserProfile> {
     logger.debug("Getting user profile", { userId });
 
-    const user = await userRepository.findById(userId);
+    const [{ data: authData, error: authErr }, profile] = await Promise.all([
+      supabaseAuthRepository.getUserById(userId),
+      userRepository.findById(userId),
+    ]);
 
-    if (!user) {
+    if (authErr || !authData.user) {
+      const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
+      throw new AppError(error.code, error.message);
+    }
+    if (!profile) {
       const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
       throw new AppError(error.code, error.message);
     }
 
-    // 移除敏感字段
-    const profile: UserProfile = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatar_url: user.avatar_url,
-      bio: user.bio,
-      phone: user.phone,
-      status: user.status,
-      email_verified: user.email_verified,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      last_login_at: user.last_login_at,
-    };
-
-    return profile;
+    return toUserProfile(profile, authData.user);
   }
 
-  /**
-   * 更新用户资料
-   *
-   * @param {string} userId - 用户 ID
-   * @param {UserUpdateData} data - 更新数据
-   * @returns {Promise<UserProfile>} 更新后的用户资料
-   * @throws {AppError} 当用户不存在或没有有效更新字段时抛出错误
-   */
   async updateUserProfile(
     userId: string,
     data: UserUpdateData,
@@ -74,342 +67,170 @@ export class UserService {
       fields: Object.keys(data),
     });
 
-    // 1. 检查用户是否存在
-    const existingUser = await userRepository.findById(userId);
-    if (!existingUser) {
+    const existing = await userRepository.findById(userId);
+    if (!existing) {
       const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
       throw new AppError(error.code, error.message);
     }
 
-    // 2. 过滤出有效的更新字段
-    const updates: Record<string, unknown> = {};
-    if (data.name !== undefined) updates.name = data.name;
-    if (data.bio !== undefined) updates.bio = data.bio;
-    if (data.phone !== undefined) updates.phone = data.phone || null;
+    const profileUpdates: Record<string, unknown> = {};
+    if (data.name !== undefined) profileUpdates.name = data.name;
+    if (data.bio !== undefined) profileUpdates.bio = data.bio;
 
-    // 3. 如果没有任何更新字段，返回错误
-    if (Object.keys(updates).length === 0) {
+    const hasProfileUpdates = Object.keys(profileUpdates).length > 0;
+    const hasPhoneUpdate = data.phone !== undefined;
+
+    if (!hasProfileUpdates && !hasPhoneUpdate) {
       const error = ErrorInfos[ErrorCodes.VALIDATION_ERROR];
       throw new AppError(error.code, error.message);
     }
 
-    // 4. 更新用户资料
-    const updatedUser = await userRepository.updateById(userId, updates);
+    if (hasProfileUpdates) {
+      await userRepository.updateById(userId, profileUpdates);
+    }
+
+    if (hasPhoneUpdate) {
+      const { error: phoneErr } = await supabaseAuthRepository.updateUserById(userId, {
+        phone: data.phone === "" ? null : data.phone,
+      });
+      if (phoneErr) {
+        logger.warn("Auth phone update failed", {
+          userId,
+          message: phoneErr.message,
+        });
+        const error = ErrorInfos[ErrorCodes.VALIDATION_ERROR];
+        throw new AppError(
+          error.code,
+          phoneErr.message || "手机号更新失败",
+        );
+      }
+    }
 
     logger.info("User profile updated successfully", { userId });
 
-    // 5. 返回更新后的资料
-    return {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      avatar_url: updatedUser.avatar_url,
-      bio: updatedUser.bio,
-      phone: updatedUser.phone,
-      status: updatedUser.status,
-      email_verified: updatedUser.email_verified,
-      created_at: updatedUser.created_at,
-      updated_at: updatedUser.updated_at,
-      last_login_at: updatedUser.last_login_at,
-    };
+    return this.getUserProfile(userId);
   }
 
-  /**
-   * 更新用户头像
-   *
-   * @param {string} userId - 用户 ID
-   * @param {string} avatarUrl - 头像 URL
-   * @returns {Promise<string>} 新的头像 URL
-   * @throws {AppError} 当用户不存在时抛出错误
-   */
   async updateUserAvatar(userId: string, avatarUrl: string): Promise<string> {
     logger.info("Updating user avatar", { userId });
 
-    // 1. 检查用户是否存在
-    const existingUser = await userRepository.findById(userId);
-    if (!existingUser) {
+    const existing = await userRepository.findById(userId);
+    if (!existing) {
       const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
       throw new AppError(error.code, error.message);
     }
 
-    // 2. 更新头像
-    const updatedUser = await userRepository.updateById(userId, {
+    const updated = await userRepository.updateById(userId, {
       avatar_url: avatarUrl,
     });
 
     logger.info("User avatar updated successfully", { userId });
 
-    return updatedUser.avatar_url || "";
+    return updated.avatar_url || "";
   }
 
-  /**
-   * 修改用户密码
-   *
-   * @param {string} userId - 用户 ID
-   * @param {ChangePasswordData} data - 修改密码数据（包含旧密码和新密码）
-   * @returns {Promise<void>}
-   * @throws {AppError} 当用户不存在、密码未设置、旧密码错误或新旧密码相同时抛出错误
-   */
   async changeUserPassword(
     userId: string,
     data: ChangePasswordData,
   ): Promise<void> {
     logger.info("Changing user password", { userId });
 
-    // 1. 查找用户
-    const user = await userRepository.findById(userId);
-    if (!user) {
+    const { data: authData, error: authErr } = await supabaseAuthRepository.getUserById(
+      userId,
+    );
+    if (authErr || !authData.user?.email) {
       const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
       throw new AppError(error.code, error.message);
     }
 
-    // 2. 检查是否已设置密码
-    if (!user.password_hash) {
-      const error = ErrorInfos[ErrorCodes.AUTH_PASSWORD_NOT_SET];
-      throw new AppError(error.code, error.message);
-    }
+    const email = authData.user.email;
 
-    // 3. 验证旧密码
-    const isValidOldPassword = await verifyPassword(
+    const { error: signErr } = await supabaseAuthRepository.signInWithPassword(
+      email,
       data.old_password,
-      user.password_hash,
     );
-
-    if (!isValidOldPassword) {
-      const error = ErrorInfos[ErrorCodes.AUTH_INVALID_OLD_PASSWORD];
-      throw new AppError(error.code, error.message);
+    if (signErr) {
+      const errInfo = ErrorInfos[ErrorCodes.AUTH_INVALID_OLD_PASSWORD];
+      throw new AppError(errInfo.code, errInfo.message);
     }
 
-    // 4. 检查新旧密码是否相同
     if (data.old_password === data.new_password) {
       const error = ErrorInfos[ErrorCodes.VALIDATION_ERROR];
       throw new AppError(error.code, error.message);
     }
 
-    // 5. 加密新密码
-    const newPasswordHash = await hashPassword(data.new_password);
-
-    // 6. 更新密码
-    await userRepository.updateById(userId, {
-      password_hash: newPasswordHash,
+    const { error: updErr } = await supabaseAuthRepository.updateUserById(userId, {
+      password: data.new_password,
     });
+    if (updErr) {
+      logger.error("Failed to update password via Auth admin", {
+        userId,
+        message: updErr.message,
+      });
+      const error = ErrorInfos[ErrorCodes.INTERNAL_ERROR];
+      throw new AppError(error.code, error.message);
+    }
 
     logger.info("User password changed successfully", { userId });
   }
 
-  /**
-   * 获取用户公开资料
-   *
-   * @param {string} userId - 用户 ID
-   * @returns {Promise<Partial<UserProfile>>} 用户公开资料（仅包含公开字段）
-   * @throws {AppError} 当用户不存在时抛出错误
-   */
   async getUserPublicProfile(userId: string): Promise<Partial<UserProfile>> {
     logger.debug("Getting user public profile", { userId });
 
-    const user = await userRepository.findById(userId);
+    const profile = await userRepository.findById(userId);
 
-    if (!user) {
+    if (!profile) {
       const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
       throw new AppError(error.code, error.message);
     }
 
-    // 只返回公开字段
     return {
-      id: user.id,
-      name: user.name,
-      avatar_url: user.avatar_url,
-      bio: user.bio,
-      created_at: user.created_at,
+      id: profile.id,
+      name: profile.name,
+      avatar_url: profile.avatar_url,
+      bio: profile.bio,
+      created_at: profile.created_at,
     };
   }
 
   /**
-   * 发送邮箱验证码（用于更换邮箱）
-   *
-   * @param {string} userId - 用户 ID
-   * @param {string} newEmail - 新邮箱地址
-   * @returns {Promise<void>}
-   * @throws {AppError} 当用户不存在、新邮箱已被使用、新邮箱与当前邮箱相同或发送过于频繁时抛出错误
+   * 更换邮箱：由 Supabase Auth 发送确认邮件等（不再使用自建验证码表）
    */
-  async sendEmailVerificationCode(userId: string, newEmail: string): Promise<void> {
-    logger.info("Sending email verification code for email change", {
+  async changeEmail(userId: string, newEmail: string): Promise<UserProfile> {
+    logger.info("Requesting email change via Auth", { userId, newEmail });
+
+    const { data: authData, error: authErr } = await supabaseAuthRepository.getUserById(
       userId,
-      newEmail,
-    });
-
-    // 1. 检查用户是否存在
-    const user = await userRepository.findById(userId);
-    if (!user) {
+    );
+    if (authErr || !authData.user?.email) {
       const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
       throw new AppError(error.code, error.message);
     }
 
-    // 2. 检查新邮箱是否与当前邮箱相同
-    if (user.email === newEmail) {
+    if (authData.user.email === newEmail) {
       const error = ErrorInfos[ErrorCodes.VALIDATION_ERROR];
       throw new AppError(error.code, "新邮箱不能与当前邮箱相同");
     }
 
-    // 3. 检查新邮箱是否已被其他用户使用
-    const emailExists = await userRepository.emailExists(newEmail);
-    if (emailExists) {
-      const error = ErrorInfos[ErrorCodes.USER_EMAIL_ALREADY_EXISTS];
-      throw new AppError(error.code, error.message);
-    }
-
-    // 4. 检查发送频率（60秒内只能发送一次）
-    const lastVerification = await authRepository.getLastVerification(
-      newEmail,
-      VerificationPurpose.CHANGE_EMAIL,
-    );
-
-    if (lastVerification) {
-      const lastSentTime = new Date(lastVerification.created_at || "").getTime();
-      const now = Date.now();
-      const timeDiff = now - lastSentTime;
-
-      // 60秒 = 60000毫秒
-      if (timeDiff < 60000) {
-        const error = ErrorInfos[ErrorCodes.VERIFICATION_CODE_TOO_FREQUENT];
-        throw new AppError(error.code, error.message);
-      }
-    }
-
-    // 5. 生成6位数字验证码
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // 6. 计算过期时间（10分钟后）
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-    // 7. 保存验证码到数据库
-    await authRepository.createVerificationCode({
+    const { error: updErr } = await supabaseAuthRepository.updateUserById(userId, {
       email: newEmail,
-      code,
-      purpose: VerificationPurpose.CHANGE_EMAIL,
-      expires_at: expiresAt,
-      user_id: userId,
-      is_used: false,
-      attempts: 0,
     });
-
-    // 8. 发送验证码邮件
-    const emailSent = await sendVerificationCodeEmail(
-      newEmail,
-      code,
-      VerificationPurpose.CHANGE_EMAIL,
-    );
-
-    if (!emailSent) {
-      const error = ErrorInfos[ErrorCodes.EMAIL_SEND_FAILED];
-      throw new AppError(error.code, error.message);
-    }
-
-    logger.info("Email verification code sent successfully", { userId, newEmail });
-  }
-
-  /**
-   * 确认更换邮箱
-   *
-   * @param {string} userId - 用户 ID
-   * @param {string} newEmail - 新邮箱地址
-   * @param {string} code - 验证码
-   * @returns {Promise<UserProfile>} 更新后的用户资料
-   * @throws {AppError} 当用户不存在、验证码错误或过期、新邮箱已被使用时抛出错误
-   */
-  async changeEmail(
-    userId: string,
-    newEmail: string,
-    code: string,
-  ): Promise<UserProfile> {
-    logger.info("Changing user email", { userId, newEmail });
-
-    // 1. 检查用户是否存在
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      const error = ErrorInfos[ErrorCodes.USER_NOT_FOUND];
-      throw new AppError(error.code, error.message);
-    }
-
-    // 2. 检查新邮箱是否与当前邮箱相同
-    if (user.email === newEmail) {
+    if (updErr) {
+      logger.warn("Auth email update failed", {
+        userId,
+        message: updErr.message,
+      });
       const error = ErrorInfos[ErrorCodes.VALIDATION_ERROR];
-      throw new AppError(error.code, "新邮箱不能与当前邮箱相同");
-    }
-
-    // 3. 检查新邮箱是否已被其他用户使用
-    const emailExists = await userRepository.emailExists(newEmail);
-    if (emailExists) {
-      const error = ErrorInfos[ErrorCodes.USER_EMAIL_ALREADY_EXISTS];
-      throw new AppError(error.code, error.message);
-    }
-
-    // 4. 验证验证码
-    const verificationCode = await authRepository.findValidVerificationCode(
-      newEmail,
-      code,
-      VerificationPurpose.CHANGE_EMAIL,
-    );
-
-    if (!verificationCode) {
-      // 尝试增加验证码尝试次数（如果验证码存在但已过期或已使用）
-      const lastCode = await authRepository.getLastVerification(
-        newEmail,
-        VerificationPurpose.CHANGE_EMAIL,
+      throw new AppError(
+        error.code,
+        updErr.message || "更换邮箱失败，请确认新邮箱未被占用",
       );
-      if (lastCode && !lastCode.is_used) {
-        await authRepository.incrementVerificationAttempts(lastCode.id);
-      }
-
-      const error = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
-      throw new AppError(error.code, error.message);
     }
 
-    // 5. 检查验证码是否属于当前用户
-    if (verificationCode.user_id !== userId) {
-      const error = ErrorInfos[ErrorCodes.VERIFICATION_CODE_INVALID];
-      throw new AppError(error.code, "验证码无效");
-    }
+    logger.info("Auth email update requested", { userId, newEmail });
 
-    // 6. 标记验证码为已使用
-    await authRepository.markVerificationCodeAsUsed(verificationCode.id);
-
-    // 7. 更新用户邮箱，并将 email_verified 设置为 false（需要重新验证）
-    const updatedUser = await userRepository.updateById(userId, {
-      email: newEmail,
-      email_verified: false,
-    });
-
-    logger.info("User email changed successfully", { userId, newEmail });
-
-    // 8. 返回更新后的用户资料
-    return {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      avatar_url: updatedUser.avatar_url,
-      bio: updatedUser.bio,
-      phone: updatedUser.phone,
-      status: updatedUser.status,
-      email_verified: updatedUser.email_verified,
-      created_at: updatedUser.created_at,
-      updated_at: updatedUser.updated_at,
-      last_login_at: updatedUser.last_login_at,
-    };
-  }
-
-  /**
-   * 当前用户登录日志（按时间倒序）
-   */
-  async getMyLoginLogs(userId: string, limit = 50): Promise<LoginLog[]> {
-    return authRepository.getUserLoginHistory(userId, limit);
+    return this.getUserProfile(userId);
   }
 }
 
-/**
- * 用户服务单例
- *
- * @constant
- * @description 全局可用的用户服务实例
- */
 export const userService = new UserService();

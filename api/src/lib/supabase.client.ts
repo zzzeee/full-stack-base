@@ -107,7 +107,7 @@ function createSupabaseClient(
  * @example
  * ```ts
  * const { data, error } = await supabase
- *   .from('users')
+ *   .from('profiles')
  *   .select('*')
  *   .eq('id', userId);
  * ```
@@ -123,7 +123,7 @@ export const supabase: TypedSupabaseClient = createSupabaseClient();
  * ```ts
  * // 管理员操作：删除任何用户
  * const { error } = await supabaseAdmin
- *   .from('users')
+ *   .from('profiles')
  *   .delete()
  *   .eq('id', userId);
  * ```
@@ -167,10 +167,10 @@ export async function checkSupabaseHealth(): Promise<boolean> {
   try {
     // 执行一个简单的查询测试连接
     const { error } = await supabase
-      .from("users")
-      .select("count")
+      .from("profiles")
+      .select("id")
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.debug("Supabase health check query returned error", {

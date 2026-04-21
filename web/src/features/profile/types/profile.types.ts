@@ -14,8 +14,9 @@
  * @property {string} name - 用户名称
  * @property {string | null} avatar_url - 头像URL
  * @property {string | null} bio - 个人简介
- * @property {string | null} phone - 手机号
+ * @property {string | null} phone - 手机号（来自 Supabase Auth auth.users.phone）
  * @property {string | null} status - 用户状态
+ * @property {boolean | null} phone_verified - 手机是否在 Auth 中已验证
  * @property {boolean | null} email_verified - 邮箱是否已验证
  * @property {string | null} created_at - 创建时间
  * @property {string | null} updated_at - 更新时间
@@ -28,6 +29,7 @@ export interface UserProfile {
     avatar_url: string | null
     bio: string | null
     phone: string | null
+    phone_verified: boolean | null
     status: string | null
     email_verified: boolean | null
     created_at: string | null
@@ -41,7 +43,7 @@ export interface UserProfile {
  * @interface
  * @property {string} [name] - 用户名称（可选）
  * @property {string} [bio] - 个人简介（可选）
- * @property {string} [phone] - 手机号（可选）
+ * @property {string} [phone] - 手机号（写入 Auth，可选）
  */
 export interface UpdateProfileData {
     name?: string
@@ -72,38 +74,8 @@ export interface ChangePasswordData {
 }
 
 /**
- * 发送邮箱验证码请求数据
- * 
- * @interface
- * @property {string} new_email - 新邮箱地址
- */
-export interface SendEmailCodeData {
-    new_email: string
-}
-
-/**
- * 更换邮箱请求数据
- * 
- * @interface
- * @property {string} new_email - 新邮箱地址
- * @property {string} code - 验证码（6位数字）
+ * 更换邮箱请求数据（由 Supabase Auth 发确认邮件）
  */
 export interface ChangeEmailData {
     new_email: string
-    code: string
-}
-
-/**
- * 登录日志行（与后端 login_logs 对齐的展示字段）
- */
-export interface LoginLogRow {
-    id: string
-    created_at: string | null
-    login_method: string
-    status: string
-    email: string | null
-    ip_address: string | null
-    user_agent: string | null
-    device_type: string | null
-    failure_reason: string | null
 }
