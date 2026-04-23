@@ -13,6 +13,7 @@ import { prettyJSON } from 'hono/pretty-json';
 // 导入路由
 import authRoutes from '[@BASE-routes]/auth.routes.ts';
 import userRoutes from '[@BASE-routes]/user.routes.ts';
+import expoRoutes from '[@BASE-routes]/expo.routes.ts';
 
 // 导入错误处理
 import { registerErrorHandler } from '[@BASE]/lib/errors/error-handler.ts';
@@ -98,6 +99,9 @@ app.route('/api/auth', authRoutes);
 
 // 用户路由（需要认证，由路由内部中间件处理）
 app.route('/api/users', userRoutes);
+
+// 展会现场后台（独立用户名体系 + JWT typ=expo）
+app.route('/api/expo', expoRoutes);
 
 // ==================== 404 处理 ====================
 

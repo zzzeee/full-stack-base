@@ -8,7 +8,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "[@BASE]/styles/globals.css"
-import { Header } from "[@BASE]/components/layout/header"
+import { AntdAppProvider } from "[@BASE]/components/providers/antd-app-provider"
 import { Toaster } from "sonner"
 
 /**
@@ -48,17 +48,12 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="zh-CN">
-            <body className={inter.className}>
-                {/* 头部导航栏 */}
-                <Header />
-                
-                <div className="flex min-h-screen flex-col">
-                    {children}
-                </div>
-                
-                {/* Toast 提示组件 */}
-                <Toaster position="top-center" richColors />
+        <html lang="zh-CN" className="h-full">
+            <body className={`${inter.className} app-body min-h-full antialiased`}>
+                <AntdAppProvider>
+                    <div className="flex min-h-screen flex-col">{children}</div>
+                    <Toaster position="top-center" richColors />
+                </AntdAppProvider>
             </body>
         </html>
     )

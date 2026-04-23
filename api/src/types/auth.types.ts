@@ -53,6 +53,12 @@ export interface JwtPayload {
     sub: string;
     email: string;
     role?: string;
+    /** 展会后台 JWT */
+    typ?: "expo";
+    /** 与会话版本对齐，用于踢下线 */
+    sv?: number;
+    /** 当前工作展会 */
+    eid?: string | null;
     iat?: number;
     exp?: number;
 }

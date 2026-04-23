@@ -1,0 +1,215 @@
+# 展会后台 — 登录 / 权限 / 用户 / 展会（模块：expo-auth）
+# 约定：status ∈ pending | in_progress | blocked | done | skipped
+
+version: 1
+meta:
+  module: expo-auth
+  name: exhibition-live-admin-auth
+  description: 登录、用户、角色（含超级管理员）、展会、权限菜单、踢下线；业务模块仅壳
+  spec: ./spec-auth-rbac.md
+
+tasks:
+  - id: SPEC-001
+    title: 冻结需求摘要与开放问题（写入 spec，开发中仅通过 spec 变更）
+    epic: meta
+    status: done
+    notes: staff_users 与 Supabase Auth 并行方案已写入 spec
+    paths: [works/expo-auth/spec-auth-rbac.md]
+
+  - id: DB-001
+    title: Supabase 迁移 — events 表（创建/切换展会）
+    epic: database
+    status: done
+    depends_on: [SPEC-001]
+    paths: [supabase/migrations/20260421000001_exhibition_staff_rbac.sql]
+
+  - id: DB-002
+    title: Supabase 迁移 — roles（含第六种角色 SUPER_ADMIN）
+    epic: database
+    status: done
+    depends_on: [DB-001]
+    paths: [supabase/migrations/20260421000001_exhibition_staff_rbac.sql]
+
+  - id: DB-003
+    title: Supabase 迁移 — permissions + role_permissions（菜单级 permission key）
+    epic: database
+    status: done
+    depends_on: [DB-002]
+    paths: [supabase/migrations/20260421000001_exhibition_staff_rbac.sql]
+
+  - id: DB-004
+    title: Supabase 迁移 — 应用用户字段（username 全局唯一、registration_status、session_version、禁用、资料字段）
+    epic: database
+    status: done
+    depends_on: [DB-002]
+    paths: [supabase/migrations/20260421000001_exhibition_staff_rbac.sql, api/src/types/database.types.ts]
+
+  - id: DB-005
+    title: Supabase 迁移 — event_memberships（user × event × role）
+    epic: database
+    status: done
+    depends_on: [DB-001, DB-004]
+    paths: [supabase/migrations/20260421000001_exhibition_staff_rbac.sql]
+
+  - id: DB-006
+    title: 种子数据 — 六角色 + 权限 key 树（初始 role_permissions 可空或由你后续填）
+    epic: database
+    status: done
+    notes: SUPER_ADMIN+ORGANIZER 默认全权限；本地种子账号 admin / Admin123456
+    depends_on: [DB-003, DB-005]
+    paths: [supabase/migrations/20260421000001_exhibition_staff_rbac.sql]
+
+  - id: API-001
+    title: 类型与 Repository — Event / Role / Permission / Membership 读模型
+    epic: api
+    status: done
+    notes: 使用 adminRepository + expo.service 聚合查询，未单独拆 Repository 类
+    depends_on: [DB-006]
+    paths: [api/src/expo/expo.service.ts, api/src/types/database.types.ts]
+
+  - id: API-002
+    title: POST /api/expo/auth/register（待审核 pending）
+    epic: api
+    status: done
+    depends_on: [API-001]
+    paths: [api/src/routes/expo.routes.ts, api/src/expo/expo.service.ts, api/src/schemas/expo.schema.ts]
+
+  - id: API-003
+    title: POST /api/expo/auth/login — JWT typ=expo，7 天，载荷 sv + eid
+    epic: api
+    status: done
+    depends_on: [API-002]
+    paths: [api/src/lib/jwt.ts, api/src/expo/expo.service.ts]
+
+  - id: API-004
+    title: expo 认证中间件 — 校验 JWT 与 staff_users.session_version
+    epic: api
+    status: done
+    depends_on: [API-003]
+    paths: [api/src/middlewares/expo-auth.middleware.ts]
+
+  - id: API-005
+    title: GET /api/expo/me
+    epic: api
+    status: done
+    depends_on: [API-004]
+    paths: [api/src/handlers/expo.handler.ts, api/src/expo/expo.service.ts]
+
+  - id: API-006
+    title: PATCH /api/expo/me/password
+    epic: api
+    status: done
+    depends_on: [API-005]
+    paths: [api/src/handlers/expo.handler.ts, api/src/expo/expo.service.ts]
+
+  - id: API-007
+    title: PATCH /api/expo/me/current-event
+    epic: api
+    status: done
+    depends_on: [API-005]
+    paths: [api/src/handlers/expo.handler.ts, api/src/expo/expo.service.ts]
+
+  - id: API-008
+    title: GET/POST/PATCH /api/expo/events
+    epic: api
+    status: done
+    depends_on: [API-004]
+    paths: [api/src/routes/expo.routes.ts, api/src/expo/expo.service.ts]
+
+  - id: API-009
+    title: 用户创建规则（服务端）
+    epic: api
+    status: done
+    depends_on: [API-001]
+    paths: [api/src/expo/expo.service.ts]
+
+  - id: API-010
+    title: GET/POST/PATCH /api/expo/users
+    epic: api
+    status: done
+    depends_on: [API-009, API-004]
+    paths: [api/src/routes/expo.routes.ts, api/src/expo/expo.service.ts]
+
+  - id: API-011
+    title: reset-password + kick
+    epic: api
+    status: done
+    depends_on: [API-010]
+    paths: [api/src/expo/expo.service.ts]
+
+  - id: API-012
+    title: 注册审核 pending / approve / reject
+    epic: api
+    status: done
+    depends_on: [API-010]
+    paths: [api/src/expo/expo.service.ts]
+
+  - id: API-013
+    title: GET /api/expo/roles、PUT /api/expo/roles/:roleId/permissions
+    epic: api
+    status: done
+    depends_on: [API-004, API-001]
+    paths: [api/src/expo/expo.service.ts]
+
+  - id: WEB-001
+    title: Web — 登录页（账号密码）
+    epic: web
+    status: done
+    depends_on: [API-003]
+    paths: [web/src/app/expo/login/page.tsx]
+
+  - id: WEB-002
+    title: Web — 注册页（提示待审核）
+    epic: web
+    status: done
+    depends_on: [API-002]
+    paths: [web/src/app/expo/register/page.tsx]
+
+  - id: WEB-003
+    title: Web — 全局布局：响应式导航、当前展会切换、退出、按权限渲染菜单
+    epic: web
+    status: done
+    depends_on: [API-005, API-007]
+    paths: [web/src/app/expo/dash/layout.tsx]
+
+  - id: WEB-004
+    title: Web — 业务壳路由（咖啡券/物资券/大巴/工单/常用链接配置常量占位）
+    epic: web
+    status: done
+    depends_on: [WEB-003]
+    paths:
+      - "web/src/app/expo/dash/[...slug]/page.tsx"
+      - web/src/config/expo-common-links.ts
+      - web/src/app/expo/dash/links/page.tsx
+      - web/src/app/expo/dash/settings/links/page.tsx
+
+  - id: WEB-005
+    title: Web — 管理页
+    epic: web
+    status: done
+    depends_on: [API-008, API-010, API-011, API-012]
+    paths: [web/src/app/expo/dash/admin/]
+
+  - id: WEB-006
+    title: Web — 修改密码（本人）
+    epic: web
+    status: done
+    depends_on: [API-006]
+    paths:
+      - web/src/app/expo/dash/settings/password/page.tsx
+      - web/src/app/expo/dash/account/password/page.tsx
+
+  - id: WEB-007
+    title: Web — 角色-权限矩阵编辑
+    epic: web
+    status: done
+    depends_on: [API-013]
+    paths: [web/src/app/expo/dash/admin/roles/page.tsx]
+
+  - id: QA-001
+    title: 集成测试 / 手测清单 — 待审核不可登录、踢下线、角色创建边界、切换展会
+    epic: qa
+    status: pending
+    notes: 待本地 supabase migration 应用后手测
+    depends_on: [WEB-005, API-004]
+    paths: [api/tests/, web/]

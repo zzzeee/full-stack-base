@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * 全局设计 token（HSL 无 hsl() 包装，供 Tailwind hsl(var(--x)) 使用）
+ * 业务组件优先用语义色，少写裸色值。
+ */
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -21,13 +25,182 @@
         --accent-foreground: 222.2 47.4% 11.2%;
         --card: 0 0% 100%;
         --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+
+        --radius: 0.5rem;
+        --radius-sm: calc(var(--radius) - 2px);
+        --radius-lg: calc(var(--radius) + 2px);
+
+        --header-height: 4rem;
+        --sidebar-width: 15.5rem;
+        --page-max-width: 72rem;
+
+        /* 展会后台画布（略区别于主站 background，便于分区感知） */
+        --expo-canvas: 210 40% 98%;
+        --expo-sidebar: 0 0% 100%;
+        --expo-sidebar-border: 214.3 31.8% 91.4%;
+        --expo-nav-active: 210 40% 96.1%;
+        --expo-nav-active-border: 222.2 47.4% 11.2%;
     }
 
     * {
         @apply border-border;
     }
 
-    body {
+    body.app-body {
         @apply bg-background text-foreground;
+    }
+}
+
+/**
+ * 全局可复用布局 / 导航样式（供多页面一致使用）
+ */
+@layer components {
+    .app-main {
+        @apply w-full;
+    }
+
+    .app-container {
+        @apply mx-auto w-full max-w-content px-4 sm:px-6 lg:px-8;
+    }
+
+    .page-hero {
+        @apply app-container flex flex-col items-center justify-center gap-6 py-16 text-center md:py-24;
+    }
+
+    .page-hero-title {
+        @apply text-4xl font-bold tracking-tight text-foreground md:text-6xl;
+    }
+
+    .page-hero-lead {
+        @apply max-w-lg text-sm text-muted-foreground md:text-base;
+    }
+
+    .link-muted {
+        @apply text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground;
+    }
+
+    /* 主站认证页（置于带顶栏的 main 内，占满剩余高度） */
+    .auth-shell {
+        @apply flex w-full flex-1 flex-col items-center justify-center bg-auth-gradient px-4 py-10;
+    }
+
+    /* 顶栏主导航：分组标题 */
+    .nav-mega-label {
+        @apply text-[10px] font-semibold uppercase tracking-wider text-muted-foreground;
+    }
+
+    .nav-mega-links {
+        @apply mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-foreground;
+    }
+
+    .nav-mega-link {
+        @apply rounded-md px-1 py-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
+    }
+
+    .nav-mega-link-active {
+        @apply bg-accent text-accent-foreground;
+    }
+
+    /* 展会侧栏：一级分区 */
+    .expo-nav-section {
+        @apply border-b border-expo-sidebar-border/80 py-3 last:border-b-0;
+    }
+
+    .expo-nav-section-title {
+        @apply px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground;
+    }
+
+    /* 二级分组（如「咖啡券管理」） */
+    .expo-nav-group {
+        @apply space-y-0.5 pt-1 first:pt-0;
+    }
+
+    .expo-nav-group-title {
+        @apply px-3 pb-1 text-xs font-medium text-muted-foreground/90;
+    }
+
+    .expo-nav-link {
+        @apply flex items-center rounded-md px-3 py-2 text-sm text-foreground/90 transition-colors hover:bg-expo-nav-active hover:text-foreground;
+    }
+
+    .expo-nav-link-active {
+        @apply bg-expo-nav-active font-medium text-foreground shadow-sm ring-1 ring-expo-nav-active-border/10;
+    }
+
+    .expo-collapse-nav-link {
+        @apply flex items-center rounded-md px-3 py-2 text-sm text-foreground/90 transition-colors hover:bg-expo-nav-active hover:text-foreground;
+    }
+
+    .expo-collapse-nav-link-active {
+        @apply bg-expo-nav-active font-medium text-foreground shadow-sm ring-1 ring-expo-nav-active-border/10;
+    }
+
+    .expo-nav-drawer-collapse .ant-collapse-item {
+        @apply border-expo-sidebar-border/80;
+    }
+
+    .expo-nav-drawer .ant-drawer-header {
+        @apply border-expo-sidebar-border;
+    }
+
+    .expo-enterprise-menu.ant-menu-dark.ant-menu-inline .ant-menu-sub.ant-menu-inline {
+        background: rgb(15 23 42 / 0.55) !important;
+    }
+
+    .expo-enterprise-root .ant-layout-sider-children {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .expo-nav-select {
+        @apply w-full rounded-md border border-input bg-background px-2 py-2 text-xs text-foreground shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    }
+
+    .expo-sidebar-brand {
+        @apply border-b border-expo-sidebar-border bg-card/50 px-4 py-4;
+    }
+
+    .expo-sidebar-brand-title {
+        @apply text-sm font-semibold tracking-tight text-foreground;
+    }
+
+    .expo-sidebar-brand-sub {
+        @apply mt-0.5 text-xs text-muted-foreground;
+    }
+
+    .expo-mobile-topbar {
+        @apply flex items-center justify-between border-b border-border bg-card px-3 py-2.5 shadow-sm md:hidden;
+    }
+
+    .expo-main-surface {
+        @apply flex-1 bg-expo-canvas/60 p-4 md:bg-transparent md:p-6 lg:p-8;
+    }
+
+    .expo-dropdown-summary {
+        @apply flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2.5 text-sm font-medium text-foreground marker:hidden [&::-webkit-details-marker]:hidden;
+    }
+
+    /* 展会登录 / 注册页外层 */
+    .expo-auth-page {
+        @apply flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-expo-canvas via-background to-muted/30 p-4 sm:p-6;
+    }
+
+    /* 内容区统一卡片块（占位页、说明块等） */
+    .panel-surface {
+        @apply rounded-lg border border-border/80 bg-card p-6 shadow-soft;
+    }
+}
+
+@layer utilities {
+    .bg-auth-gradient {
+        background-image: linear-gradient(
+            165deg,
+            hsl(var(--muted)) 0%,
+            hsl(var(--background)) 45%,
+            hsl(210 40% 98%) 100%
+        );
     }
 }

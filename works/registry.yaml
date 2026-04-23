@@ -1,0 +1,10 @@
+# 工作清单模块注册表 — 给人看也给脚本扫
+# 新模块：在 works/<module-id>/ 下自建 tasks.yaml（+ 可选 spec），并在此追加一条。
+
+version: 1
+modules:
+  - id: expo-auth
+    title: 展会后台 — 登录、RBAC、用户、展会、权限与业务壳
+    status: active
+    tasks: expo-auth/tasks.yaml
+    spec: expo-auth/spec-auth-rbac.md

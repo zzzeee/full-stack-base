@@ -67,6 +67,186 @@ export type Database = {
                 }
                 Relationships: []
             }
+            event_memberships: {
+                Row: {
+                    created_at: string
+                    event_id: string
+                    id: string
+                    role_id: string
+                    staff_user_id: string
+                    updated_at: string
+                }
+                Insert: {
+                    created_at?: string
+                    event_id: string
+                    id?: string
+                    role_id: string
+                    staff_user_id: string
+                    updated_at?: string
+                }
+                Update: {
+                    created_at?: string
+                    event_id?: string
+                    id?: string
+                    role_id?: string
+                    staff_user_id?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            events: {
+                Row: {
+                    created_at: string
+                    ends_at: string | null
+                    id: string
+                    logo_url: string | null
+                    name: string
+                    starts_at: string | null
+                    status: string
+                    updated_at: string
+                }
+                Insert: {
+                    created_at?: string
+                    ends_at?: string | null
+                    id?: string
+                    logo_url?: string | null
+                    name: string
+                    starts_at?: string | null
+                    status?: string
+                    updated_at?: string
+                }
+                Update: {
+                    created_at?: string
+                    ends_at?: string | null
+                    id?: string
+                    logo_url?: string | null
+                    name?: string
+                    starts_at?: string | null
+                    status?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            permissions: {
+                Row: {
+                    created_at: string
+                    group_key: string
+                    id: string
+                    key: string
+                    label: string
+                    sort_order: number
+                }
+                Insert: {
+                    created_at?: string
+                    group_key: string
+                    id: string
+                    key: string
+                    label: string
+                    sort_order?: number
+                }
+                Update: {
+                    created_at?: string
+                    group_key?: string
+                    id?: string
+                    key?: string
+                    label?: string
+                    sort_order?: number
+                }
+                Relationships: []
+            }
+            role_permissions: {
+                Row: {
+                    permission_id: string
+                    role_id: string
+                }
+                Insert: {
+                    permission_id: string
+                    role_id: string
+                }
+                Update: {
+                    permission_id?: string
+                    role_id?: string
+                }
+                Relationships: []
+            }
+            roles: {
+                Row: {
+                    created_at: string
+                    id: string
+                    key: string
+                    name: string
+                    sort_order: number
+                    updated_at: string
+                }
+                Insert: {
+                    created_at?: string
+                    id: string
+                    key: string
+                    name: string
+                    sort_order?: number
+                    updated_at?: string
+                }
+                Update: {
+                    created_at?: string
+                    id?: string
+                    key?: string
+                    name?: string
+                    sort_order?: number
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            staff_users: {
+                Row: {
+                    approved_at: string | null
+                    approved_by: string | null
+                    created_at: string
+                    current_event_id: string | null
+                    disabled: boolean
+                    display_name: string
+                    id: string
+                    password_hash: string
+                    phone: string | null
+                    registration_status: string
+                    remark: string | null
+                    session_version: number
+                    updated_at: string
+                    username: string
+                }
+                Insert: {
+                    approved_at?: string | null
+                    approved_by?: string | null
+                    created_at?: string
+                    current_event_id?: string | null
+                    disabled?: boolean
+                    display_name?: string
+                    id?: string
+                    password_hash: string
+                    phone?: string | null
+                    registration_status?: string
+                    remark?: string | null
+                    session_version?: number
+                    updated_at?: string
+                    username: string
+                }
+                Update: {
+                    approved_at?: string | null
+                    approved_by?: string | null
+                    created_at?: string
+                    current_event_id?: string | null
+                    disabled?: boolean
+                    display_name?: string
+                    id?: string
+                    password_hash?: string
+                    phone?: string | null
+                    registration_status?: string
+                    remark?: string | null
+                    session_version?: number
+                    updated_at?: string
+                    username?: string
+                }
+                Relationships: []
+            }
         }
         Views: {
             [_ in never]: never

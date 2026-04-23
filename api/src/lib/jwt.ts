@@ -64,13 +64,16 @@ export async function generateToken(
     expiresIn: number = JWT_EXPIRES_IN
 ): Promise<string> {
     try {
-        const jwtPayload: Payload = {
+        const jwtPayload = {
             sub: payload.sub,
             email: payload.email,
             role: payload.role,
+            typ: payload.typ,
+            sv: payload.sv,
+            eid: payload.eid,
             exp: getNumericDate(expiresIn),
             iat: getNumericDate(0), // 当前时间
-        };
+        } as unknown as Payload;
 
         const token = await create({ alg: 'HS256', typ: 'JWT' }, jwtPayload, key);
 
@@ -116,6 +119,9 @@ export async function verifyToken(token: string): Promise<JwtPayload> {
             sub: payload.sub as string,
             email: payload.email as string,
             role: payload.role as string | undefined,
+            typ: payload.typ as "expo" | undefined,
+            sv: typeof payload.sv === "number" ? payload.sv : undefined,
+            eid: (payload.eid as string | null | undefined) ?? undefined,
             iat: payload.iat as number | undefined,
             exp: payload.exp as number | undefined,
         };
